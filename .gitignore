@@ -1,0 +1,35 @@
+# Simulation files
+*.vcd
+*.lxt
+*.lxt2
+*.fst
+*.log
+*.syn
+work/
+simv*
+
+# Synthesis files
+*.dc
+*.synth
+*.area
+*.power
+*.timing
+synth_*/
+build/
+
+# EDA tool files
+*.lock
+*.bak
+*.tmp
+*.jou
+*.hst
+*.rpt
+*.chk
+
+# Python
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db
