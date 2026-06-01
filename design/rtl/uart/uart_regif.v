@@ -42,15 +42,15 @@ module uart_regif (
 );
 
   // 寄存器
-  logic       tx_en_d, tx_en_q;
-  logic       rx_en_d, rx_en_q;
-  logic [15:0] baud_div_d, baud_div_q;
-  logic [7:0] tx_data_d, tx_data_q;
-  logic       tx_start_d, tx_start_q;
+  reg       tx_en_d, tx_en_q;
+  reg       rx_en_d, rx_en_q;
+  reg [15:0] baud_div_d, baud_div_q;
+  reg [7:0] tx_data_d, tx_data_q;
+  reg       tx_start_d, tx_start_q;
 
   // 状态清除（读后自动清零）
-  logic tx_done_clr, rx_valid_clr, rx_overflow_clr, frame_err_clr;
-  logic tx_done_s, rx_valid_s, rx_overflow_s, frame_err_s;
+  reg tx_done_clr, rx_valid_clr, rx_overflow_clr, frame_err_clr;
+  reg tx_done_s, rx_valid_s, rx_overflow_s, frame_err_s;
 
   // 握手信号
   wire ahb_active;
@@ -66,7 +66,7 @@ module uart_regif (
   assign tx_start_o   = tx_start_q;
 
   // 状态位锁存（set由硬件，clear由读操作）
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       tx_done_s     <= 1'b0;
       rx_valid_s    <= 1'b0;
@@ -97,7 +97,7 @@ module uart_regif (
   end
 
   // AHB读写处理
-  always_comb begin
+  always @(*) begin
     tx_en_d       = tx_en_q;
     rx_en_d       = rx_en_q;
     baud_div_d    = baud_div_q;
@@ -109,7 +109,7 @@ module uart_regif (
     frame_err_clr = 1'b0;
 
     if (hwrite_i) begin
-      unique case (haddr_i[3:0])
+      case (haddr_i[3:0])
         4'h0: begin
           tx_en_d = hwdata_i[0];
           rx_en_d = hwdata_i[1];
@@ -133,7 +133,7 @@ module uart_regif (
   end
 
   // 寄存器更新
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       tx_en_q    <= 1'b1;
       rx_en_q    <= 1'b1;

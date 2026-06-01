@@ -40,12 +40,12 @@ module sram_ecc_regif (
   output wire       ecc_inject_en_o
 );
 
-  logic       rd_req;
-  logic       wr_req;
-  logic [7:0] rd_addr_d, rd_addr_q;
-  logic       ecc_inject_d, ecc_inject_q;
-  logic [7:0] ecc_err_cnt_d, ecc_err_cnt_q;
-  logic [9:0] ecc_err_addr_d, ecc_err_addr_q;
+  reg       rd_req;
+  reg       wr_req;
+  reg [7:0] rd_addr_d, rd_addr_q;
+  reg       ecc_inject_d, ecc_inject_q;
+  reg [7:0] ecc_err_cnt_d, ecc_err_cnt_q;
+  reg [9:0] ecc_err_addr_d, ecc_err_addr_q;
 
   wire ahb_active;
   assign ahb_active = hsel_i && (htrans_i == 2'b10);
@@ -64,14 +64,14 @@ module sram_ecc_regif (
   assign wr_data_o = {sram_ecc_encode(hwdata_i), hwdata_i};
 
   // 读请求
-  always_comb begin
+  always @(*) begin
     rd_addr_d = rd_addr_q;
     if (ahb_active && !hwrite_i && is_data_space) begin
       rd_addr_d = haddr_i[9:2];
     end
   end
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       rd_addr_q <= 8'd0;
     end else begin
@@ -80,7 +80,7 @@ module sram_ecc_regif (
   end
 
   // ECC状态更新
-  always_comb begin
+  always @(*) begin
     ecc_err_cnt_d  = ecc_err_cnt_q;
     ecc_err_addr_d = ecc_err_addr_q;
     if (rd_single_err_i || rd_double_err_i) begin
@@ -90,14 +90,14 @@ module sram_ecc_regif (
   end
 
   // 控制寄存器
-  always_comb begin
+  always @(*) begin
     ecc_inject_d = ecc_inject_q;
     if (ahb_active && hwrite_i && !is_data_space && haddr_i[11:0] == 12'h408) begin
       ecc_inject_d = hwdata_i[0];
     end
   end
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       ecc_err_cnt_q  <= 8'd0;
       ecc_err_addr_q <= 10'd0;
@@ -112,7 +112,7 @@ module sram_ecc_regif (
   // ECC编码函数
   function automatic [6:0] sram_ecc_encode;
     input [31:0] data;
-    logic [5:0] p;
+    reg [5:0] p;
     begin
       p[0] = data[0]  ^ data[1]  ^ data[3]  ^ data[4]  ^ data[6]  ^ data[8]  ^
              data[10] ^ data[11] ^ data[13] ^ data[15] ^ data[17] ^ data[19] ^

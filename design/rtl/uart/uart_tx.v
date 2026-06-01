@@ -18,19 +18,17 @@ module uart_tx (
 );
 
   // 状态编码
-  typedef enum logic [1:0] {
-    TxIdle,
-    TxStart,
-    TxData,
-    TxStop
-  } tx_state_e;
+  localparam [1:0] TxIdle  = 2'd0;
+  localparam [1:0] TxStart = 2'd1;
+  localparam [1:0] TxData  = 2'd2;
+  localparam [1:0] TxStop  = 2'd3;
 
-  tx_state_e tx_state_d, tx_state_q;
-  logic [2:0] tx_bit_cnt_d, tx_bit_cnt_q;
-  logic [7:0] tx_shift_d, tx_shift_q;
-  logic       tx_busy_d, tx_busy_q;
-  logic       tx_done_d, tx_done_q;
-  logic       uart_tx_d, uart_tx_q;
+  reg [1:0] tx_state_d, tx_state_q;
+  reg [2:0] tx_bit_cnt_d, tx_bit_cnt_q;
+  reg [7:0] tx_shift_d, tx_shift_q;
+  reg       tx_busy_d, tx_busy_q;
+  reg       tx_done_d, tx_done_q;
+  reg       uart_tx_d, uart_tx_q;
 
   // 输出
   assign uart_tx_o  = uart_tx_q;
@@ -38,7 +36,7 @@ module uart_tx (
   assign tx_done_o  = tx_done_q;
 
   // 下一状态逻辑
-  always_comb begin
+  always @(*) begin
     tx_state_d   = tx_state_q;
     tx_bit_cnt_d = tx_bit_cnt_q;
     tx_shift_d   = tx_shift_q;
@@ -46,7 +44,7 @@ module uart_tx (
     tx_done_d    = 1'b0;
     uart_tx_d    = uart_tx_q;
 
-    unique case (tx_state_q)
+    case (tx_state_q)
       TxIdle: begin
         uart_tx_d = 1'b1;
         tx_busy_d = 1'b0;
@@ -90,7 +88,7 @@ module uart_tx (
   end
 
   // 寄存器
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       tx_state_q   <= TxIdle;
       tx_bit_cnt_q <= 3'd0;

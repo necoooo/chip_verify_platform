@@ -29,9 +29,9 @@ module sys_tc_top (
   wire        int_flag_clr;
 
   // 中断标志（写1清零）
-  logic int_flag_latched, int_flag_latched_d;
+  reg int_flag_latched, int_flag_latched_d;
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       int_flag_latched <= 1'b0;
     end else begin

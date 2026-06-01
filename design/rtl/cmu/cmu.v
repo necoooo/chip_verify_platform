@@ -23,19 +23,17 @@ module cmu (
 );
 
   // 切换状态编码
-  typedef enum logic [1:0] {
-    SwIdle,
-    SwGateOff,
-    SwSwitch,
-    SwGateOn
-  } switch_state_e;
+  localparam [1:0] SwIdle     = 2'd0;
+  localparam [1:0] SwGateOff  = 2'd1;
+  localparam [1:0] SwSwitch   = 2'd2;
+  localparam [1:0] SwGateOn   = 2'd3;
 
-  switch_state_e switch_state_d, switch_state_q;
-  logic       clk_sel_d, clk_sel_q;   // 0=pll, 1=rch
-  logic       clk_sel_req_d, clk_sel_req_q;
-  logic       gate_pll_d, gate_pll_q;
-  logic       gate_rch_d, gate_rch_q;
-  logic [3:0] switch_cnt_d, switch_cnt_q;
+  reg [1:0] switch_state_d, switch_state_q;
+  reg       clk_sel_d, clk_sel_q;   // 0=pll, 1=rch
+  reg       clk_sel_req_d, clk_sel_req_q;
+  reg       gate_pll_d, gate_pll_q;
+  reg       gate_rch_d, gate_rch_q;
+  reg [3:0] switch_cnt_d, switch_cnt_q;
 
   wire        ahb_active;
   wire        pll_gated, rch_gated;
@@ -49,7 +47,7 @@ module cmu (
   assign hclk_o = clk_sel_q ? rch_gated : pll_gated;
 
   // 切换状态机
-  always_comb begin
+  always @(*) begin
     switch_state_d = switch_state_q;
     clk_sel_d      = clk_sel_q;
     clk_sel_req_d  = clk_sel_req_q;
@@ -57,7 +55,7 @@ module cmu (
     gate_rch_d     = gate_rch_q;
     switch_cnt_d   = switch_cnt_q;
 
-    unique case (switch_state_q)
+    case (switch_state_q)
       SwIdle: begin
         if (clk_sel_req_q) begin
           switch_state_d = SwGateOff;
@@ -99,7 +97,7 @@ module cmu (
     end
   end
 
-  always_ff @(posedge hclk_o or negedge clk_sel_q) begin
+  always @(posedge hclk_o or negedge clk_sel_q) begin
     if (!clk_sel_q) begin  // pll_clk domain reset
       switch_state_q <= SwIdle;
       clk_sel_q      <= 1'b0;
@@ -117,7 +115,7 @@ module cmu (
     end
   end
 
-  always_ff @(posedge hclk_o) begin
+  always @(posedge hclk_o) begin
     switch_state_q <= switch_state_d;
     clk_sel_q      <= clk_sel_d;
     clk_sel_req_q  <= clk_sel_req_d;

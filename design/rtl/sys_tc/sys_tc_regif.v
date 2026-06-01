@@ -31,10 +31,10 @@ module sys_tc_regif (
   input  wire       int_flag_i
 );
 
-  logic       en_d, en_q;
-  logic       ie_d, ie_q;
-  logic [31:0] reload_d, reload_q;
-  logic       int_flag_clr;
+  reg       en_d, en_q;
+  reg       ie_d, ie_q;
+  reg [31:0] reload_d, reload_q;
+  reg       int_flag_clr;
 
   wire ahb_active;
   assign ahb_active = hsel_i && (htrans_i == 2'b10);
@@ -46,13 +46,13 @@ module sys_tc_regif (
   assign reload_o       = reload_q;
   assign int_flag_clr_o = int_flag_clr;
 
-  always_comb begin
+  always @(*) begin
     en_d     = en_q;
     ie_d     = ie_q;
     reload_d = reload_q;
 
     if (hwrite_i) begin
-      unique case (haddr_i[3:0])
+      case (haddr_i[3:0])
         4'h0: begin
           en_d = hwdata_i[0];
           ie_d = hwdata_i[1];
@@ -65,7 +65,7 @@ module sys_tc_regif (
     int_flag_clr = hwrite_i && (haddr_i[3:0] == 4'hC) && hwdata_i[0];
   end
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       en_q     <= 1'b0;
       ie_q     <= 1'b0;

@@ -5,8 +5,8 @@
 // 读操作：通过AHB字地址读取39位码字
 
 module sram_ecc_mem #(
-  parameter int Depth = 256,
-  localparam int AddrWidth = $clog2(Depth)
+  parameter Depth = 256,
+  parameter AddrWidth = 8
 ) (
   input  wire       clk_i,
   input  wire       rst_ni,
@@ -25,7 +25,7 @@ module sram_ecc_mem #(
 
   assign rd_data_o = mem[rd_addr_i];
 
-  always_ff @(posedge clk_i) begin
+  always @(posedge clk_i) begin
     if (wr_en_i) begin
       mem[wr_addr_i] <= wr_data_i;
     end

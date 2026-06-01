@@ -2,7 +2,8 @@
 //
 // 功能：仿真AHB-Lite Master，替代CPU发起读写交易
 // 接口：ahb_write(addr, data) / ahb_read(addr, data) 任务
-// 注意：纯仿真模型，不可综合
+// 注意：纯仿真模型，不可综合。SystemVerilog文件
+// 使用方式：在testbench中实例化本模块后调用ahb_write/ahb_read任务
 
 module ahb_bfm (
   input  wire       clk_i,
@@ -34,7 +35,7 @@ module ahb_bfm (
   reg [31:0] read_result;
 
   // AHB Master状态机
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       m_haddr_o      <= 32'h0;
       m_hwrite_o     <= 1'b0;
@@ -49,7 +50,7 @@ module ahb_bfm (
     end else begin
       operation_done <= 1'b0;
 
-      unique case (task_phase)
+      case (task_phase)
         2'd0: begin  // IDLE
           if (task_pending) begin
             m_haddr_o  <= task_addr;

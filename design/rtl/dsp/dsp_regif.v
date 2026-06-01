@@ -34,11 +34,11 @@ module dsp_regif (
 );
 
   // 寄存器
-  logic [7:0] opa_d, opa_q;
-  logic [7:0] opb_d, opb_q;
-  logic       op_sel_d, op_sel_q;
-  logic       start_d, start_q;
-  logic       done_latch_q;  // done锁存（读后清零）
+  reg [7:0] opa_d, opa_q;
+  reg [7:0] opb_d, opb_q;
+  reg       op_sel_d, op_sel_q;
+  reg       start_d, start_q;
+  reg       done_latch_q;  // done锁存（读后清零）
 
   wire ahb_active;
   assign ahb_active = hsel_i && (htrans_i == 2'b10);
@@ -51,7 +51,7 @@ module dsp_regif (
   assign start_o  = start_q;
 
   // done锁存
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       done_latch_q <= 1'b0;
     end else begin
@@ -63,14 +63,14 @@ module dsp_regif (
     end
   end
 
-  always_comb begin
+  always @(*) begin
     opa_d    = opa_q;
     opb_d    = opb_q;
     op_sel_d = op_sel_q;
     start_d  = 1'b0;
 
     if (hwrite_i) begin
-      unique case (haddr_i[3:0])
+      case (haddr_i[3:0])
         4'h0: opa_d = hwdata_i[7:0];
         4'h4: opb_d = hwdata_i[7:0];
         4'h8: begin
@@ -82,7 +82,7 @@ module dsp_regif (
     end
   end
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       opa_q    <= 8'd0;
       opb_q    <= 8'd0;

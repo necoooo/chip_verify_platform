@@ -20,8 +20,8 @@ module sram_ecc_decode (
   wire [6:0] ecc_calc;
   wire [5:0] syndrome;
   wire       p0_calc, p0_mismatch;
-  logic [31:0] corrected;
-  logic       is_single, is_double;
+  reg [31:0] corrected;
+  reg       is_single, is_double;
 
   assign p0_stored = codeword_i[38];
   assign p_stored  = codeword_i[37:32];
@@ -38,7 +38,7 @@ module sram_ecc_decode (
   assign p0_mismatch = p0_calc ^ p0_stored;
 
   // 错误判定
-  always_comb begin
+  always @(*) begin
     corrected = data_stored;
     is_single = 1'b0;
     is_double = 1'b0;
@@ -51,7 +51,7 @@ module sram_ecc_decode (
       if (p0_mismatch) begin
         // 单bit错误：syndrome指示错误码字位置，翻转对应数据位
         is_single = 1'b1;
-        unique case (syndrome)
+        case (syndrome)
           6'd3:  corrected[0]  = ~data_stored[0];
           6'd5:  corrected[1]  = ~data_stored[1];
           6'd6:  corrected[2]  = ~data_stored[2];

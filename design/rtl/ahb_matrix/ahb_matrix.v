@@ -66,7 +66,7 @@ module ahb_matrix (
   assign s_hwdata_o = m_hwdata_i;
 
   // 地址译码
-  logic [5:0] addr_decode;
+  reg [5:0] addr_decode;
   wire        no_idle;
 
   assign no_idle = m_htrans_i[1];
@@ -81,12 +81,12 @@ module ahb_matrix (
   assign s_hsel_o = addr_decode;
 
   // 响应多路复用（优先级编码）
-  logic [31:0] m_hrdata;
-  logic       m_hready;
-  logic [1:0] m_hresp;
+  reg [31:0] m_hrdata;
+  reg       m_hready;
+  reg [1:0] m_hresp;
 
-  always_comb begin
-    unique case (1'b1)
+  always @(*) begin
+    case (1'b1)
       addr_decode[0]: begin
         m_hrdata = s0_hrdata_i; m_hready = s0_hready_i; m_hresp = s0_hresp_i;
       end

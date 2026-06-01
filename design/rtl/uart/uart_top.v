@@ -40,11 +40,11 @@ module uart_top (
   wire        baud_tick;
 
   // 波特率发生器
-  logic [15:0] baud_cnt_d, baud_cnt_q;
+  reg [15:0] baud_cnt_d, baud_cnt_q;
 
   assign baud_tick = (baud_cnt_q == 16'd0);
 
-  always_comb begin
+  always @(*) begin
     if (baud_tick || (!tx_en && !rx_en)) begin
       baud_cnt_d = baud_div;
     end else begin
@@ -52,7 +52,7 @@ module uart_top (
     end
   end
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       baud_cnt_q <= 16'd0;
     end else begin

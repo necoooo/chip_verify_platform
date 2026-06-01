@@ -38,14 +38,14 @@ module rmu #(
   // ========================================================================
   // 500us数字滤波
   // ========================================================================
-  logic [14:0] filter_cnt_d, filter_cnt_q;
-  logic        pin_sync1_q, pin_sync2_q;
-  logic        pin_prev_q;
-  logic        pin_filtered_d, pin_filtered_q;
-  logic        filter_active_d, filter_active_q;
+  reg [14:0] filter_cnt_d, filter_cnt_q;
+  reg        pin_sync1_q, pin_sync2_q;
+  reg        pin_prev_q;
+  reg        pin_filtered_d, pin_filtered_q;
+  reg        filter_active_d, filter_active_q;
 
   // 双触发同步
-  always_ff @(posedge clk_i or negedge pin_rst_ni) begin
+  always @(posedge clk_i or negedge pin_rst_ni) begin
     if (!pin_rst_ni) begin
       pin_sync1_q <= 1'b0;
       pin_sync2_q <= 1'b0;
@@ -58,7 +58,7 @@ module rmu #(
   wire pin_falling;
   assign pin_falling = pin_prev_q && !pin_sync2_q;
 
-  always_comb begin
+  always @(*) begin
     filter_cnt_d    = filter_cnt_q;
     pin_filtered_d  = pin_filtered_q;
     filter_active_d = filter_active_q;
@@ -76,7 +76,7 @@ module rmu #(
     end
   end
 
-  always_ff @(posedge clk_i or negedge por_rst_ni) begin
+  always @(posedge clk_i or negedge por_rst_ni) begin
     if (!por_rst_ni) begin
       filter_cnt_q    <= 15'd0;
       pin_prev_q      <= 1'b1;
@@ -93,7 +93,7 @@ module rmu #(
   // ========================================================================
   // 软件复位寄存器 [4]=bfm [3]=sram [2]=timer [1]=dsp [0]=uart
   // ========================================================================
-  logic [4:0] soft_rst_d, soft_rst_q;  // 1=释放 0=复位
+  reg [4:0] soft_rst_d, soft_rst_q;  // 1=释放 0=复位
   wire [4:0] module_rst_raw;
 
   wire global_rst_raw;
@@ -108,14 +108,14 @@ module rmu #(
   // ========================================================================
   // 同步释放（异步复位、同步释放）
   // ========================================================================
-  logic [1:0] sys_sync_d, sys_sync_q;
-  logic [1:0] uart_sync_d, uart_sync_q;
-  logic [1:0] dsp_sync_d, dsp_sync_q;
-  logic [1:0] timer_sync_d, timer_sync_q;
-  logic [1:0] sram_sync_d, sram_sync_q;
-  logic [1:0] bfm_sync_d, bfm_sync_q;
+  reg [1:0] sys_sync_d, sys_sync_q;
+  reg [1:0] uart_sync_d, uart_sync_q;
+  reg [1:0] dsp_sync_d, dsp_sync_q;
+  reg [1:0] timer_sync_d, timer_sync_q;
+  reg [1:0] sram_sync_d, sram_sync_q;
+  reg [1:0] bfm_sync_d, bfm_sync_q;
 
-  always_comb begin
+  always @(*) begin
     sys_sync_d   = global_rst_raw ? {sys_sync_q[0], 1'b1}   : 2'b00;
     uart_sync_d  = module_rst_raw[0] ? {uart_sync_q[0], 1'b1} : 2'b00;
     dsp_sync_d   = module_rst_raw[1] ? {dsp_sync_q[0], 1'b1}  : 2'b00;
@@ -124,27 +124,27 @@ module rmu #(
     bfm_sync_d   = module_rst_raw[4] ? {bfm_sync_q[0], 1'b1}  : 2'b00;
   end
 
-  always_ff @(posedge clk_i or negedge global_rst_raw) begin
+  always @(posedge clk_i or negedge global_rst_raw) begin
     if (!global_rst_raw) sys_sync_q <= 2'b00;
     else                 sys_sync_q <= sys_sync_d;
   end
-  always_ff @(posedge clk_i or negedge module_rst_raw[0]) begin
+  always @(posedge clk_i or negedge module_rst_raw[0]) begin
     if (!module_rst_raw[0]) uart_sync_q <= 2'b00;
     else                    uart_sync_q <= uart_sync_d;
   end
-  always_ff @(posedge clk_i or negedge module_rst_raw[1]) begin
+  always @(posedge clk_i or negedge module_rst_raw[1]) begin
     if (!module_rst_raw[1]) dsp_sync_q <= 2'b00;
     else                    dsp_sync_q <= dsp_sync_d;
   end
-  always_ff @(posedge clk_i or negedge module_rst_raw[2]) begin
+  always @(posedge clk_i or negedge module_rst_raw[2]) begin
     if (!module_rst_raw[2]) timer_sync_q <= 2'b00;
     else                    timer_sync_q <= timer_sync_d;
   end
-  always_ff @(posedge clk_i or negedge module_rst_raw[3]) begin
+  always @(posedge clk_i or negedge module_rst_raw[3]) begin
     if (!module_rst_raw[3]) sram_sync_q <= 2'b00;
     else                    sram_sync_q <= sram_sync_d;
   end
-  always_ff @(posedge clk_i or negedge module_rst_raw[4]) begin
+  always @(posedge clk_i or negedge module_rst_raw[4]) begin
     if (!module_rst_raw[4]) bfm_sync_q <= 2'b00;
     else                    bfm_sync_q <= bfm_sync_d;
   end
@@ -164,14 +164,14 @@ module rmu #(
   assign hresp_o = 2'b00;
   assign hready_o = 1'b1;
 
-  always_comb begin
+  always @(*) begin
     soft_rst_d = soft_rst_q;
     if (ahb_active && hwrite_i && haddr_i[3:0] == 4'h0) begin
       soft_rst_d = hwdata_i[4:0];
     end
   end
 
-  always_ff @(posedge clk_i or negedge module_rst_raw[4]) begin
+  always @(posedge clk_i or negedge module_rst_raw[4]) begin
     if (!module_rst_raw[4]) begin
       soft_rst_q <= 5'b11111;
     end else begin

@@ -10,7 +10,7 @@ module sram_ecc_encode (
 
   // 数据位在码字中的位置（1-indexed，非2的幂位置）
   // d[0]→pos3, d[1]→pos5, d[2]→pos6, ..., d[31]→pos38
-  logic [5:0] p;
+  reg [5:0] p;
 
   // 校验位p[1] (位置1, bit0=1): 覆盖位置bit0=1的数据位
   assign p[0] = data_i[0]  ^ data_i[1]  ^ data_i[3]  ^ data_i[4]  ^

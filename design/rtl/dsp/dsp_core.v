@@ -18,11 +18,11 @@ module dsp_core (
   output wire       done_o            // 运算完成脉冲
 );
 
-  logic [8:0] add_result, sub_result;
-  logic       busy_d, busy_q;
-  logic       done_d, done_q;
-  logic [8:0] result_d, result_q;
-  logic       start_q;
+  reg [8:0] add_result, sub_result;
+  reg       busy_d, busy_q;
+  reg       done_d, done_q;
+  reg [8:0] result_d, result_q;
+  reg       start_q;
 
   assign add_result = {1'b0, opa_i} + {1'b0, opb_i};
   assign sub_result = {1'b0, opa_i} - {1'b0, opb_i};
@@ -32,7 +32,7 @@ module dsp_core (
   assign done_o   = done_q;
 
   // 打拍start信号
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       start_q <= 1'b0;
     end else begin
@@ -40,7 +40,7 @@ module dsp_core (
     end
   end
 
-  always_comb begin
+  always @(*) begin
     busy_d  = busy_q;
     done_d  = 1'b0;
     result_d = result_q;
@@ -54,7 +54,7 @@ module dsp_core (
     end
   end
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       busy_q   <= 1'b0;
       done_q   <= 1'b0;

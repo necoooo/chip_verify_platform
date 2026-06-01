@@ -18,27 +18,25 @@ module uart_rx (
 );
 
   // 状态编码
-  typedef enum logic [1:0] {
-    RxIdle,
-    RxStart,
-    RxData,
-    RxStop
-  } rx_state_e;
+  localparam [1:0] RxIdle  = 2'd0;
+  localparam [1:0] RxStart = 2'd1;
+  localparam [1:0] RxData  = 2'd2;
+  localparam [1:0] RxStop  = 2'd3;
 
-  rx_state_e rx_state_d, rx_state_q;
-  logic [2:0] rx_bit_cnt_d, rx_bit_cnt_q;
-  logic [7:0] rx_shift_d, rx_shift_q;
-  logic [7:0] rx_data_d, rx_data_q;
-  logic       rx_valid_d, rx_valid_q;
-  logic       rx_overflow_d, rx_overflow_q;
-  logic       frame_err_d, frame_err_q;
+  reg [1:0] rx_state_d, rx_state_q;
+  reg [2:0] rx_bit_cnt_d, rx_bit_cnt_q;
+  reg [7:0] rx_shift_d, rx_shift_q;
+  reg [7:0] rx_data_d, rx_data_q;
+  reg       rx_valid_d, rx_valid_q;
+  reg       rx_overflow_d, rx_overflow_q;
+  reg       frame_err_d, frame_err_q;
 
   // 同步寄存器（2级，避免亚稳态）
-  logic rx_sync1, rx_sync2;
-  logic rx_prev;
+  reg rx_sync1, rx_sync2;
+  reg rx_prev;
   wire  rx_falling;
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       rx_sync1 <= 1'b1;
       rx_sync2 <= 1'b1;
@@ -59,7 +57,7 @@ module uart_rx (
   assign frame_err_o   = frame_err_q;
 
   // 下一状态逻辑
-  always_comb begin
+  always @(*) begin
     rx_state_d    = rx_state_q;
     rx_bit_cnt_d  = rx_bit_cnt_q;
     rx_shift_d    = rx_shift_q;
@@ -68,7 +66,7 @@ module uart_rx (
     rx_overflow_d = rx_overflow_q;
     frame_err_d   = frame_err_q;
 
-    unique case (rx_state_q)
+    case (rx_state_q)
       RxIdle: begin
         frame_err_d = 1'b0;
         if (rx_falling && rx_en_i) begin
@@ -117,7 +115,7 @@ module uart_rx (
   end
 
   // 寄存器
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       rx_state_q    <= RxIdle;
       rx_bit_cnt_q  <= 3'd0;

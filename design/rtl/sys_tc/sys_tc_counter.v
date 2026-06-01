@@ -15,15 +15,15 @@ module sys_tc_counter (
   output wire       int_flag_o        // 中断标志
 );
 
-  logic [31:0] count_d, count_q;
-  logic       int_flag_d, int_flag_q;
-  logic       tc_int_d, tc_int_q;
+  reg [31:0] count_d, count_q;
+  reg       int_flag_d, int_flag_q;
+  reg       tc_int_d, tc_int_q;
 
   assign count_o    = count_q;
   assign int_flag_o = int_flag_q;
   assign tc_int_o   = tc_int_q;
 
-  always_comb begin
+  always @(*) begin
     count_d    = count_q;
     int_flag_d = int_flag_q;
     tc_int_d   = 1'b0;
@@ -39,7 +39,7 @@ module sys_tc_counter (
     end
   end
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+  always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       count_q     <= 32'd49999;  // 1ms @ 50MHz
       int_flag_q  <= 1'b0;
