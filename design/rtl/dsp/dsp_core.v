@@ -3,6 +3,7 @@
 // 操作：
 //   op_sel_i=0 → result = opa + opb (9位含进位)
 //   op_sel_i=1 → result = opa - opb (9位含借位)
+// 状态机：三段式结构（状态寄存器 + 下一状态逻辑 + 输出寄存器）
 
 module dsp_core (
   input  wire       clk_i,
@@ -14,24 +15,30 @@ module dsp_core (
   input  wire       start_i,          // 启动运算
 
   output wire [8:0] result_o,         // 运算结果（9位含进位/借位）
-  output wire       busy_o,           // 运算进行中
-  output wire       done_o            // 运算完成脉冲
+  output reg        busy_o,           // 运算进行中
+  output reg        done_o            // 运算完成脉冲
 );
 
-  reg [8:0] add_result, sub_result;
-  reg       busy_d, busy_q;
-  reg       done_d, done_q;
-  reg [8:0] result_d, result_q;
-  reg       start_q;
+  // 状态定义
+  localparam [0:0] S_IDLE = 1'd0;
+  localparam [0:0] S_BUSY = 1'd1;
+
+  // 状态寄存器
+  reg [0:0] curr_state;
+  reg [0:0] next_state;
+
+  // 数据通路寄存器
+  reg [8:0] result_q;
+  reg       start_q;                  // 打拍start信号（边沿检测）
+
+  wire [8:0] add_result;
+  wire [8:0] sub_result;
 
   assign add_result = {1'b0, opa_i} + {1'b0, opb_i};
   assign sub_result = {1'b0, opa_i} - {1'b0, opb_i};
+  assign result_o   = result_q;
 
-  assign result_o = result_q;
-  assign busy_o   = busy_q;
-  assign done_o   = done_q;
-
-  // 打拍start信号
+  // start边沿检测
   always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       start_q <= 1'b0;
@@ -40,29 +47,66 @@ module dsp_core (
     end
   end
 
-  always @(*) begin
-    busy_d  = busy_q;
-    done_d  = 1'b0;
-    result_d = result_q;
-
-    if (start_i && !start_q && !busy_q) begin
-      busy_d = 1'b1;
-    end else if (busy_q) begin
-      result_d = op_sel_i ? sub_result : add_result;
-      busy_d   = 1'b0;
-      done_d   = 1'b1;
+  // ========================================================================
+  // Block 1: 状态转移时序逻辑
+  // ========================================================================
+  always @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      curr_state <= S_IDLE;
+    end else begin
+      curr_state <= next_state;
     end
   end
 
+  // ========================================================================
+  // Block 2: 下一状态组合逻辑
+  // ========================================================================
+  always @(*) begin
+    next_state = curr_state;
+
+    case (curr_state)
+      S_IDLE: begin
+        if (start_i && !start_q) begin
+          next_state = S_BUSY;
+        end
+      end
+
+      S_BUSY: begin
+        next_state = S_IDLE;
+      end
+
+      default: next_state = S_IDLE;
+    endcase
+  end
+
+  // ========================================================================
+  // Block 3: 输出时序逻辑（寄存器输出，避免毛刺）
+  // ========================================================================
   always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      busy_q   <= 1'b0;
-      done_q   <= 1'b0;
-      result_q <= 9'd0;
+      busy_o    <= 1'b0;
+      done_o    <= 1'b0;
+      result_q  <= 9'd0;
     end else begin
-      busy_q   <= busy_d;
-      done_q   <= done_d;
-      result_q <= result_d;
+      // 默认值
+      done_o <= 1'b0;
+
+      case (curr_state)
+        S_IDLE: begin
+          busy_o <= 1'b0;
+        end
+
+        S_BUSY: begin
+          busy_o   <= 1'b0;           // 单周期运算，下一拍即完成
+          result_q <= op_sel_i ? sub_result : add_result;
+          done_o   <= 1'b1;
+        end
+
+        default: begin
+          busy_o <= 1'b0;
+          done_o <= 1'b0;
+        end
+      endcase
     end
   end
 

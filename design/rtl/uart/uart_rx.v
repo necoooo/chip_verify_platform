@@ -2,6 +2,7 @@
 //
 // 功能：串行输入检测 → 并行数据输出
 // 时序：检测起始位下降沿 → 在每位中点采样 → 输出8位数据
+// 状态机：三段式结构（状态寄存器 + 下一状态逻辑 + 输出寄存器）
 
 module uart_rx (
   input  wire       clk_i,
@@ -11,30 +12,30 @@ module uart_rx (
   input  wire       baud_tick_i,      // 波特率采样脉冲
   input  wire       uart_rx_i,        // 串行输入
 
-  output wire [7:0] rx_data_o,        // 接收数据
-  output wire       rx_valid_o,       // 接收数据有效脉冲
-  output wire       rx_overflow_o,    // 接收溢出
-  output wire       frame_err_o       // 帧错误（停止位异常）
+  output reg  [7:0] rx_data_o,        // 接收数据
+  output reg        rx_valid_o,       // 接收数据有效脉冲
+  output reg        rx_overflow_o,    // 接收溢出
+  output reg        frame_err_o       // 帧错误（停止位异常）
 );
 
-  // 状态编码
-  localparam [1:0] RxIdle  = 2'd0;
-  localparam [1:0] RxStart = 2'd1;
-  localparam [1:0] RxData  = 2'd2;
-  localparam [1:0] RxStop  = 2'd3;
+  // 状态定义
+  localparam [1:0] S_IDLE  = 2'd0;
+  localparam [1:0] S_START = 2'd1;
+  localparam [1:0] S_DATA  = 2'd2;
+  localparam [1:0] S_STOP  = 2'd3;
 
-  reg [1:0] rx_state_d, rx_state_q;
-  reg [2:0] rx_bit_cnt_d, rx_bit_cnt_q;
-  reg [7:0] rx_shift_d, rx_shift_q;
-  reg [7:0] rx_data_d, rx_data_q;
-  reg       rx_valid_d, rx_valid_q;
-  reg       rx_overflow_d, rx_overflow_q;
-  reg       frame_err_d, frame_err_q;
+  // 状态寄存器
+  reg [1:0] curr_state;
+  reg [1:0] next_state;
+
+  // 数据通路寄存器
+  reg [2:0] bit_cnt;
+  reg [7:0] shift_reg;
 
   // 同步寄存器（2级，避免亚稳态）
   reg rx_sync1, rx_sync2;
   reg rx_prev;
-  wire  rx_falling;
+  wire rx_falling;
 
   always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
@@ -50,88 +51,112 @@ module uart_rx (
 
   assign rx_falling = rx_prev && !rx_sync2;
 
-  // 输出
-  assign rx_data_o     = rx_data_q;
-  assign rx_valid_o    = rx_valid_q;
-  assign rx_overflow_o = rx_overflow_q;
-  assign frame_err_o   = frame_err_q;
+  // ========================================================================
+  // Block 1: 状态转移时序逻辑
+  // ========================================================================
+  always @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      curr_state <= S_IDLE;
+    end else begin
+      curr_state <= next_state;
+    end
+  end
 
-  // 下一状态逻辑
+  // ========================================================================
+  // Block 2: 下一状态组合逻辑
+  // ========================================================================
   always @(*) begin
-    rx_state_d    = rx_state_q;
-    rx_bit_cnt_d  = rx_bit_cnt_q;
-    rx_shift_d    = rx_shift_q;
-    rx_data_d     = rx_data_q;
-    rx_valid_d    = 1'b0;
-    rx_overflow_d = rx_overflow_q;
-    frame_err_d   = frame_err_q;
+    next_state = curr_state;
 
-    case (rx_state_q)
-      RxIdle: begin
-        frame_err_d = 1'b0;
+    case (curr_state)
+      S_IDLE: begin
         if (rx_falling && rx_en_i) begin
-          rx_state_d   = RxStart;
-          rx_bit_cnt_d = 3'd0;
+          next_state = S_START;
         end
       end
 
-      RxStart: begin
+      S_START: begin
         if (baud_tick_i) begin
           if (!rx_sync2) begin
-            rx_state_d = RxData;
+            next_state = S_DATA;
           end else begin
-            rx_state_d = RxIdle;  // 假起始位
+            next_state = S_IDLE;  // 假起始位
           end
         end
       end
 
-      RxData: begin
+      S_DATA: begin
+        if (baud_tick_i && bit_cnt == 3'd7) begin
+          next_state = S_STOP;
+        end
+      end
+
+      S_STOP: begin
         if (baud_tick_i) begin
-          rx_shift_d   = {rx_sync2, rx_shift_q[7:1]};
-          rx_bit_cnt_d = rx_bit_cnt_q + 3'd1;
-          if (rx_bit_cnt_q == 3'd7) begin
-            rx_state_d = RxStop;
-          end
+          next_state = S_IDLE;
         end
       end
 
-      RxStop: begin
-        if (baud_tick_i) begin
-          if (rx_sync2) begin
-            rx_data_d  = rx_shift_q;
-            rx_valid_d = 1'b1;
-            if (rx_valid_q) begin
-              rx_overflow_d = 1'b1;
-            end
-          end else begin
-            frame_err_d = 1'b1;
-          end
-          rx_state_d = RxIdle;
-        end
-      end
-
-      default: rx_state_d = RxIdle;
+      default: next_state = S_IDLE;
     endcase
   end
 
-  // 寄存器
+  // ========================================================================
+  // Block 3: 输出时序逻辑（寄存器输出，避免毛刺）
+  // ========================================================================
   always @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      rx_state_q    <= RxIdle;
-      rx_bit_cnt_q  <= 3'd0;
-      rx_shift_q    <= 8'd0;
-      rx_data_q     <= 8'd0;
-      rx_valid_q    <= 1'b0;
-      rx_overflow_q <= 1'b0;
-      frame_err_q   <= 1'b0;
+      rx_data_o     <= 8'd0;
+      rx_valid_o    <= 1'b0;
+      rx_overflow_o <= 1'b0;
+      frame_err_o   <= 1'b0;
+      bit_cnt       <= 3'd0;
+      shift_reg     <= 8'd0;
     end else begin
-      rx_state_q    <= rx_state_d;
-      rx_bit_cnt_q  <= rx_bit_cnt_d;
-      rx_shift_q    <= rx_shift_d;
-      rx_data_q     <= rx_data_d;
-      rx_valid_q    <= rx_valid_d;
-      rx_overflow_q <= rx_overflow_d;
-      frame_err_q   <= frame_err_d;
+      // 默认值
+      rx_valid_o <= 1'b0;
+
+      case (curr_state)
+        S_IDLE: begin
+          frame_err_o <= 1'b0;
+          if (rx_falling && rx_en_i) begin
+            bit_cnt <= 3'd0;
+          end
+        end
+
+        S_START: begin
+          if (baud_tick_i && !rx_sync2) begin
+            // 起始位确认，准备接收
+          end
+        end
+
+        S_DATA: begin
+          if (baud_tick_i) begin
+            shift_reg <= {rx_sync2, shift_reg[7:1]};
+            bit_cnt   <= bit_cnt + 3'd1;
+          end
+        end
+
+        S_STOP: begin
+          if (baud_tick_i) begin
+            if (rx_sync2) begin
+              rx_data_o  <= shift_reg;
+              rx_valid_o <= 1'b1;
+              if (rx_valid_o) begin
+                rx_overflow_o <= 1'b1;
+              end
+            end else begin
+              frame_err_o <= 1'b1;
+            end
+          end
+        end
+
+        default: begin
+          rx_valid_o    <= 1'b0;
+          rx_overflow_o <= 1'b0;
+          frame_err_o   <= 1'b0;
+        end
+      endcase
     end
   end
 

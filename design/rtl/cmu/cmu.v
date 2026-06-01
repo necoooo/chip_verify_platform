@@ -5,6 +5,7 @@
 //   - pll_clk: PLL输出 50MHz（上电默认）
 // 切换策略：先关后开（Gate off current → Switch → Gate on new）
 // AHB寄存器：0x5000_0000 CMU_CLK_SEL, 0x5000_0004 CMU_STATUS
+// 状态机：三段式结构（状态寄存器 + 下一状态逻辑 + 输出寄存器）
 
 module cmu (
   input  wire       rch_clk_i,        // 内部RC振荡器 16MHz
@@ -22,110 +23,139 @@ module cmu (
   output wire [1:0] hresp_o
 );
 
-  // 切换状态编码
-  localparam [1:0] SwIdle     = 2'd0;
-  localparam [1:0] SwGateOff  = 2'd1;
-  localparam [1:0] SwSwitch   = 2'd2;
-  localparam [1:0] SwGateOn   = 2'd3;
+  // 状态定义
+  localparam [1:0] S_IDLE     = 2'd0;
+  localparam [1:0] S_GATE_OFF = 2'd1;
+  localparam [1:0] S_SWITCH   = 2'd2;
+  localparam [1:0] S_GATE_ON  = 2'd3;
 
-  reg [1:0] switch_state_d, switch_state_q;
-  reg       clk_sel_d, clk_sel_q;   // 0=pll, 1=rch
-  reg       clk_sel_req_d, clk_sel_req_q;
-  reg       gate_pll_d, gate_pll_q;
-  reg       gate_rch_d, gate_rch_q;
-  reg [3:0] switch_cnt_d, switch_cnt_q;
+  // 状态寄存器
+  reg [1:0] curr_state;
+  reg [1:0] next_state;
 
-  wire        ahb_active;
-  wire        pll_gated, rch_gated;
+  // 时钟选择与控制
+  reg       clk_sel;             // 0=pll, 1=rch
+  reg       clk_sel_req;         // 时钟切换请求
+  reg       gate_pll;            // pll门控
+  reg       gate_rch;            // rch门控
+  reg [3:0] switch_cnt;          // 切换计数器
+
+  wire      ahb_active;
+  wire      pll_gated, rch_gated;
 
   assign ahb_active = hsel_i && (htrans_i == 2'b10);
   assign hresp_o = 2'b00;
   assign hready_o = 1'b1;
 
-  assign pll_gated = pll_clk_i & gate_pll_q;
-  assign rch_gated = rch_clk_i & gate_rch_q;
-  assign hclk_o = clk_sel_q ? rch_gated : pll_gated;
+  assign pll_gated = pll_clk_i & gate_pll;
+  assign rch_gated = rch_clk_i & gate_rch;
+  assign hclk_o = clk_sel ? rch_gated : pll_gated;
 
-  // 切换状态机
-  always @(*) begin
-    switch_state_d = switch_state_q;
-    clk_sel_d      = clk_sel_q;
-    clk_sel_req_d  = clk_sel_req_q;
-    gate_pll_d     = gate_pll_q;
-    gate_rch_d     = gate_rch_q;
-    switch_cnt_d   = switch_cnt_q;
-
-    case (switch_state_q)
-      SwIdle: begin
-        if (clk_sel_req_q) begin
-          switch_state_d = SwGateOff;
-          switch_cnt_d   = 4'd0;
-        end
-      end
-
-      SwGateOff: begin
-        if (clk_sel_q) gate_rch_d = 1'b0;
-        else           gate_pll_d = 1'b0;
-        switch_cnt_d = switch_cnt_q + 4'd1;
-        if (switch_cnt_q == 4'd3) begin
-          switch_state_d = SwSwitch;
-        end
-      end
-
-      SwSwitch: begin
-        clk_sel_d      = clk_sel_req_q;
-        switch_state_d = SwGateOn;
-        switch_cnt_d   = 4'd0;
-      end
-
-      SwGateOn: begin
-        if (clk_sel_req_q) gate_rch_d = 1'b1;
-        else               gate_pll_d = 1'b1;
-        switch_cnt_d = switch_cnt_q + 4'd1;
-        if (switch_cnt_q == 4'd3) begin
-          switch_state_d = SwIdle;
-          clk_sel_req_d  = 1'b0;
-        end
-      end
-
-      default: switch_state_d = SwIdle;
-    endcase
-
-    // AHB写操作
-    if (ahb_active && hwrite_i && haddr_i[3:0] == 4'h0) begin
-      clk_sel_req_d = hwdata_i[0];
-    end
-  end
-
-  always @(posedge hclk_o or negedge clk_sel_q) begin
-    if (!clk_sel_q) begin  // pll_clk domain reset
-      switch_state_q <= SwIdle;
-      clk_sel_q      <= 1'b0;
-      clk_sel_req_q  <= 1'b0;
-      gate_pll_q     <= 1'b1;
-      gate_rch_q     <= 1'b0;
-      switch_cnt_q   <= 4'd0;
-    end else begin        // rch_clk domain reset
-      switch_state_q <= SwIdle;
-      clk_sel_q      <= 1'b1;
-      clk_sel_req_q  <= 1'b0;
-      gate_pll_q     <= 1'b0;
-      gate_rch_q     <= 1'b1;
-      switch_cnt_q   <= 4'd0;
+  // ========================================================================
+  // Block 1: 状态转移时序逻辑
+  // ========================================================================
+  // 注：CMU无外部复位，上电默认pll_clk域（clk_sel=0），使用异步复位架构
+  always @(posedge hclk_o or negedge clk_sel) begin
+    if (!clk_sel) begin            // pll_clk域复位（默认域）
+      curr_state <= S_IDLE;
+    end else begin                 // rch_clk域复位
+      curr_state <= S_IDLE;
     end
   end
 
   always @(posedge hclk_o) begin
-    switch_state_q <= switch_state_d;
-    clk_sel_q      <= clk_sel_d;
-    clk_sel_req_q  <= clk_sel_req_d;
-    gate_pll_q     <= gate_pll_d;
-    gate_rch_q     <= gate_rch_d;
-    switch_cnt_q   <= switch_cnt_d;
+    curr_state <= next_state;
   end
 
-  assign hrdata_o = (haddr_i[3:0] == 4'h0) ? {31'h0, clk_sel_q} :
-                    (haddr_i[3:0] == 4'h4) ? {31'h0, clk_sel_q} :
+  // ========================================================================
+  // Block 2: 下一状态组合逻辑
+  // ========================================================================
+  always @(*) begin
+    next_state = curr_state;
+
+    case (curr_state)
+      S_IDLE: begin
+        if (clk_sel_req) begin
+          next_state = S_GATE_OFF;
+        end
+      end
+
+      S_GATE_OFF: begin
+        if (switch_cnt == 4'd3) begin
+          next_state = S_SWITCH;
+        end
+      end
+
+      S_SWITCH: begin
+        next_state = S_GATE_ON;
+      end
+
+      S_GATE_ON: begin
+        if (switch_cnt == 4'd3) begin
+          next_state = S_IDLE;
+        end
+      end
+
+      default: next_state = S_IDLE;
+    endcase
+  end
+
+  // ========================================================================
+  // Block 3: 输出时序逻辑（寄存器输出，包含数据通路和AHB处理）
+  // ========================================================================
+  always @(posedge hclk_o or negedge clk_sel) begin
+    if (!clk_sel) begin            // pll_clk域复位
+      clk_sel      <= 1'b0;
+      clk_sel_req  <= 1'b0;
+      gate_pll     <= 1'b1;
+      gate_rch     <= 1'b0;
+      switch_cnt   <= 4'd0;
+    end else begin                 // rch_clk域复位
+      clk_sel      <= 1'b1;
+      clk_sel_req  <= 1'b0;
+      gate_pll     <= 1'b0;
+      gate_rch     <= 1'b1;
+      switch_cnt   <= 4'd0;
+    end
+  end
+
+  always @(posedge hclk_o) begin
+    case (curr_state)
+      S_IDLE: begin
+        switch_cnt <= 4'd0;
+        // AHB写触发切换请求
+        if (ahb_active && hwrite_i && haddr_i[3:0] == 4'h0) begin
+          clk_sel_req <= hwdata_i[0];
+        end
+      end
+
+      S_GATE_OFF: begin
+        if (clk_sel) gate_rch <= 1'b0;
+        else         gate_pll <= 1'b0;
+        switch_cnt <= switch_cnt + 4'd1;
+      end
+
+      S_SWITCH: begin
+        clk_sel    <= clk_sel_req;
+        switch_cnt <= 4'd0;
+      end
+
+      S_GATE_ON: begin
+        if (clk_sel_req) gate_rch <= 1'b1;
+        else             gate_pll <= 1'b1;
+        switch_cnt <= switch_cnt + 4'd1;
+        if (switch_cnt == 4'd3) begin
+          clk_sel_req <= 1'b0;
+        end
+      end
+
+      default: ;
+    endcase
+  end
+
+  // AHB读数据
+  assign hrdata_o = (haddr_i[3:0] == 4'h0) ? {31'h0, clk_sel} :
+                    (haddr_i[3:0] == 4'h4) ? {31'h0, clk_sel} :
                     32'h0;
 
 endmodule
