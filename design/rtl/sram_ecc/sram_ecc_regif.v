@@ -40,9 +40,6 @@ module sram_ecc_regif (
   output wire       ecc_inject_en_o
 );
 
-  reg       rd_req;
-  reg       wr_req;
-  reg [7:0] rd_addr_d, rd_addr_q;
   reg       ecc_inject_d, ecc_inject_q;
   reg [7:0] ecc_err_cnt_d, ecc_err_cnt_q;
   reg [9:0] ecc_err_addr_d, ecc_err_addr_q;
@@ -57,27 +54,11 @@ module sram_ecc_regif (
   assign is_data_space = (haddr_i[11:10] == 2'b00);
 
   assign wr_addr_o = haddr_i[9:2];
-  assign rd_addr_o = rd_addr_q;
+  assign rd_addr_o = haddr_i[9:2];  // V1.1: 组合逻辑, 修复读延迟
 
   // 写请求
   assign wr_en_o = ahb_active && hwrite_i && is_data_space;
   assign wr_data_o = {sram_ecc_encode(hwdata_i), hwdata_i};
-
-  // 读请求
-  always @(*) begin
-    rd_addr_d = rd_addr_q;
-    if (ahb_active && !hwrite_i && is_data_space) begin
-      rd_addr_d = haddr_i[9:2];
-    end
-  end
-
-  always @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) begin
-      rd_addr_q <= 8'd0;
-    end else begin
-      rd_addr_q <= rd_addr_d;
-    end
-  end
 
   // ECC状态更新
   always @(*) begin
