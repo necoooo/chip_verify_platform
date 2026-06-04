@@ -1,5 +1,4 @@
-// AHB Matrix Sanity Sequence (ahb_matrix_sanity_seq) V1.0
-// 验证: 遍历HADDR[31:28]=0~5，验证读写正常完成(HRESP=OKAY)
+// AHB Matrix Sanity Sequence V1.1: 自动检查6区译码+保留区ERROR
 class ahb_matrix_sanity_seq extends ahb_base_sequence;
   `uvm_object_utils(ahb_matrix_sanity_seq)
   task body();
@@ -9,19 +8,19 @@ class ahb_matrix_sanity_seq extends ahb_base_sequence;
     if (!uvm_config_db #(ahb_matrix_env_config)::get(null, "uvm_test_top.env", "cfg", cfg)) begin
       `uvm_error(get_type_name(), "AHB_Matrix config not found"); return;
     end
-    `uvm_info(get_type_name(), "=== AHB Matrix Sanity: 6-region address decode ===", UVM_LOW)
+    `uvm_info(get_type_name(), "=== AHB Matrix Sanity ===", UVM_LOW)
     wait_cycles(10);
 
-    // 遍历6路地址区域
     for (region = 0; region < 6; region++) begin
       ahb_read({region, 28'h0000_0000}, rd);
-      `uvm_info(get_type_name(),
-        $sformatf("Region %0d (0x%01h000_0000): read data=0x%08h", region, region, rd), UVM_LOW)
+      if (rd != 32'h0000_0000)
+        `uvm_error(get_type_name(), $sformatf("Region %0d: exp=0x0 got=0x%08h", region, rd))
     end
 
-    // 访问保留地址→期望ERROR
     ahb_read(32'h6000_0000, rd);
-    `uvm_info(get_type_name(), "Reserved region (0x6000_0000): should return ERROR", UVM_LOW)
+    if (rd != 32'hDEAD_BEEF)
+      `uvm_error(get_type_name(), $sformatf("Reserved: exp=0xDEAD_BEEF got=0x%08h", rd))
+
     `uvm_info(get_type_name(), "AHB Matrix Sanity PASS", UVM_LOW)
   endtask
   function new(string name = "ahb_matrix_sanity_seq"); super.new(name); endfunction

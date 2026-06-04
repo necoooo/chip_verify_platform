@@ -2,7 +2,7 @@
 
 **版本**: V2.0  
 **日期**: 2026-06-04  
-**状态**: CMU ✅ (V1.2 FSM修复), 继续下一模块
+**状态**: ✅ 全部8模块Sanity通过 (2026-06-04)
 
 ---
 
@@ -13,7 +13,7 @@
 | 1 | 测试点文档 (8模块CSV) | ✅ |
 | 2 | 验证方案文档 (8模块MD) | ✅ |
 | 3 | UVM验证环境搭建 | ✅ |
-| 4 | Sanity用例调试 | 🔄 CMU ✅, RMU ✅, SYS_TC ✅, DSP ✅, SRAM_ECC ✅, UART ✅, AHB_MATRIX 🔲 |
+| 4 | Sanity用例调试 | ✅ CMU,RMU,SYS_TC,DSP,SRAM_ECC,UART,AHB_MATRIX 全部通过 |
 | 5 | 模块级详细验证 | 🔲 |
 | 6 | 系统级验证环境 | 🔲 |
 | 7 | 验证报告 | 🔲 |
@@ -95,6 +95,12 @@
 | 0604 | uart_agent: is_active类型错+缺sequencer+monitor_cb无时钟 | ✅ 修复agent架构 |
 | 0604 | agent driver NBA不驱动virtual interface信号 | 📝 known issue |
 | 0604 | Sanity: 回环 TX/RX_DONE+RX_VALID 0 ERROR | ✅ |
+
+### AHB_MATRIX模块 (2026-06-04)
+| 问题 | 描述 | 状态 |
+|------|------|------|
+| Sanity | V1.1: 6区自动检查+保留区DEAD_BEEF 0 ERROR | ✅ |
+| RTL | 设计简洁规范, 无需修改 | — |
 
 ---
 ## 四、后续计划
