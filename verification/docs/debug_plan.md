@@ -13,7 +13,7 @@
 | 1 | 测试点文档 (8模块CSV) | ✅ |
 | 2 | 验证方案文档 (8模块MD) | ✅ |
 | 3 | UVM验证环境搭建 | ✅ |
-| 4 | Sanity用例调试 | 🔄 CMU ✅, RMU ✅, SYS_TC ✅, DSP 🔲, 其余 🔲 |
+| 4 | Sanity用例调试 | 🔄 CMU ✅, RMU ✅, SYS_TC ✅, DSP ✅, SRAM_ECC 🔲, 其余 🔲 |
 | 5 | 模块级详细验证 | 🔲 |
 | 6 | 系统级验证环境 | 🔲 |
 | 7 | 验证报告 | 🔲 |
@@ -66,10 +66,16 @@
 | Sanity | test_rmu_sanity 全部PASS | ✅ |
 
 ### SYS_TC模块
+| 日期 | 问题 | 状态 |
+|------|------|------|
+| 0604 | Sanity V1.0 伪PASS (STATUS未检查) | ⚠️ |
+| 0604 | V1.1 修复: 等待50010周期, STATUS自动检查 → 0x01 PASS | ✅ |
+
+### DSP模块 (2026-06-04)
 | 问题 | 描述 | 状态 |
 |------|------|------|
-| Sanity | test_sys_tc_sanity 0 ERROR | ✅ |
-| 备注 | STATUS读回0x00, 测试未检查INT_FLAG(弱断言) | 📝 后续加强 |
+| Sanity | test_dsp_sanity 自动检查 3+5=8 0 ERROR | ✅ |
+| RTL | 设计规范(完整异步复位), 无需修改 | — |
 
 ---
 ## 四、后续计划
