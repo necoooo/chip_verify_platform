@@ -13,7 +13,7 @@
 | 1 | 测试点文档 (8模块CSV) | ✅ |
 | 2 | 验证方案文档 (8模块MD) | ✅ |
 | 3 | UVM验证环境搭建 | ✅ |
-| 4 | Sanity用例调试 | 🔄 CMU ✅, RMU ✅, SYS_TC 🔲, 其余 🔲 |
+| 4 | Sanity用例调试 | 🔄 CMU ✅, RMU ✅, SYS_TC ✅, DSP 🔲, 其余 🔲 |
 | 5 | 模块级详细验证 | 🔲 |
 | 6 | 系统级验证环境 | 🔲 |
 | 7 | 验证报告 | 🔲 |
@@ -64,6 +64,12 @@
 |------|------|------|
 | RTL bug | por_rst_ni直连高, 滤波器寄存器无初始化, X态扩散至soft_rst_q=0x00 | ✅ V1.1 initial块 |
 | Sanity | test_rmu_sanity 全部PASS | ✅ |
+
+### SYS_TC模块
+| 问题 | 描述 | 状态 |
+|------|------|------|
+| Sanity | test_sys_tc_sanity 0 ERROR | ✅ |
+| 备注 | STATUS读回0x00, 测试未检查INT_FLAG(弱断言) | 📝 后续加强 |
 
 ---
 ## 四、后续计划
