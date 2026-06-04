@@ -14,7 +14,7 @@ class uart_sequence_item extends uvm_sequence_item;
   rand bit [1:0]  parity_sel;    // 校验选择（预留）
 
   // 方向
-  bit             is_tx;         // 1=发送, 0=接收
+  rand bit        is_tx;         // 1=发送, 0=接收
 
   // 接收状态
   bit             frame_err;     // 帧错误

@@ -5,6 +5,7 @@
 ../harness/BT/uart/uart_coverage.sv
 ../harness/BT/uart/uart_env.sv
 ../harness/BT/uart/sequences/uart_sanity_seq.sv
+../harness/BT/uart/sequences/uart_rx_seq.sv
 ../harness/BT/uart/tests/uart_base_test.sv
 ../harness/BT/uart/tests/test_uart_sanity.sv
 // 新增测试用例在此追加 ↓

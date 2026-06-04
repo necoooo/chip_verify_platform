@@ -13,7 +13,7 @@
 | 1 | 测试点文档 (8模块CSV) | ✅ |
 | 2 | 验证方案文档 (8模块MD) | ✅ |
 | 3 | UVM验证环境搭建 | ✅ |
-| 4 | Sanity用例调试 | 🔄 CMU ✅, RMU ✅, SYS_TC ✅, DSP ✅, SRAM_ECC ✅, UART 🔲, AHB_MATRIX 🔲 |
+| 4 | Sanity用例调试 | 🔄 CMU ✅, RMU ✅, SYS_TC ✅, DSP ✅, SRAM_ECC ✅, UART ✅, AHB_MATRIX 🔲 |
 | 5 | 模块级详细验证 | 🔲 |
 | 6 | 系统级验证环境 | 🔲 |
 | 7 | 验证报告 | 🔲 |
@@ -84,6 +84,17 @@
 | 0604 | V1.1 多地址暴露: rd_addr_q寄存器延迟→前一地址数据 | ❌ |
 | 0604 | V1.1 修复: rd_addr_o改为组合逻辑(haddr_i直连) | ✅ |
 | 0604 | Sanity V1.1: 5地址读写 0 ERROR | ✅ |
+
+---
+### UART模块 (2026-06-04)
+| 日期 | 问题 | 状态 |
+|------|------|------|
+| 0604 | regif地址解码只用[3:0], RXD(0x10)误读为CTRL(0x00)→0x03 | ✅ 改为[5:0] |
+| 0604 | TX/RX共享波特率计数器, 回环时互相干扰 | ✅ V1.2独立计数器 |
+| 0604 | uart_rx缺start_det起始位同步 | ✅ 添加start_det→RX计数器中点对齐 |
+| 0604 | uart_agent: is_active类型错+缺sequencer+monitor_cb无时钟 | ✅ 修复agent架构 |
+| 0604 | agent driver NBA不驱动virtual interface信号 | 📝 known issue |
+| 0604 | Sanity: 回环 TX/RX_DONE+RX_VALID 0 ERROR | ✅ |
 
 ---
 ## 四、后续计划

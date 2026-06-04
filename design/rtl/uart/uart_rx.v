@@ -15,7 +15,8 @@ module uart_rx (
   output reg  [7:0] rx_data_o,        // 接收数据
   output reg        rx_valid_o,       // 接收数据有效脉冲
   output reg        rx_overflow_o,    // 接收溢出
-  output reg        frame_err_o       // 帧错误（停止位异常）
+  output reg        frame_err_o,      // 帧错误（停止位异常）
+  output wire       start_det_o       // V1.1: 起始位检测
 );
 
   // 状态定义
@@ -50,6 +51,7 @@ module uart_rx (
   end
 
   assign rx_falling = rx_prev && !rx_sync2;
+  assign start_det_o = rx_falling && rx_en_i && (curr_state == S_IDLE);
 
   // ========================================================================
   // Block 1: 状态转移时序逻辑

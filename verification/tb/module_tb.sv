@@ -161,7 +161,6 @@ module module_tb;
 `elsif DUT_UART
   wire uart_tx, uart_rx;
   wire tx_int, rx_int;
-  assign uart_rx = uart_tx;  // 模块级回环
 
   uart_top u_dut (
     .clk_i    (hclk),
@@ -180,10 +179,10 @@ module module_tb;
     .rx_int_o (rx_int)
   );
 
-  // UART物理层interface
-  uart_if uart_vif ();
+  // UART: 回环 + Agent monitor读TX
+  assign uart_rx = uart_tx;
+  uart_if uart_vif (.hclk(hclk));
   assign uart_vif.uart_tx = uart_tx;
-  assign uart_rx          = uart_vif.uart_rx;
 
 `elsif DUT_AHB_MATRIX
   wire [5:0]  s_hsel;

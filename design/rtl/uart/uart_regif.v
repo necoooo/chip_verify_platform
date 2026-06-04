@@ -109,7 +109,7 @@ module uart_regif (
     frame_err_clr = 1'b0;
 
     if (hwrite_i) begin
-      case (haddr_i[3:0])
+      case (haddr_i[5:0])
         4'h0: begin
           tx_en_d = hwdata_i[0];
           rx_en_d = hwdata_i[1];
@@ -123,7 +123,7 @@ module uart_regif (
       endcase
     end else begin
       // 读STATUS时自动清除
-      if (haddr_i[3:0] == 4'h8) begin
+      if (haddr_i[5:0] == 4'h8) begin
         tx_done_clr    = 1'b1;
         rx_valid_clr   = 1'b1;
         rx_overflow_clr = 1'b1;
@@ -150,12 +150,12 @@ module uart_regif (
   end
 
   // 读数据多路复用
-  assign hrdata_o = (haddr_i[3:0] == 4'h0)  ? {27'h0, 3'b0, rx_en_q, tx_en_q} :
-                    (haddr_i[3:0] == 4'h4)  ? {16'h0, baud_div_q} :
-                    (haddr_i[3:0] == 4'h8)  ? {27'h0, frame_err_s, rx_overflow_s,
+  assign hrdata_o = (haddr_i[5:0] == 4'h0)  ? {27'h0, 3'b0, rx_en_q, tx_en_q} :
+                    (haddr_i[5:0] == 4'h4)  ? {16'h0, baud_div_q} :
+                    (haddr_i[5:0] == 4'h8)  ? {27'h0, frame_err_s, rx_overflow_s,
                                               rx_valid_s, tx_done_s, tx_busy_i} :
-                    (haddr_i[3:0] == 4'hC)  ? {24'h0, tx_data_q} :
-                    (haddr_i[3:0] == 4'h10) ? {24'h0, rx_data_i} :
+                    (haddr_i[5:0] == 4'hC)  ? {24'h0, tx_data_q} :
+                    (haddr_i[5:0] == 4'h10) ? {24'h0, rx_data_i} :
                     32'h0;
 
 endmodule

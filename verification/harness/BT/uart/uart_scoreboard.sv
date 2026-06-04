@@ -43,7 +43,7 @@ class uart_scoreboard extends uvm_scoreboard;
     ahb_sequence_item item;
     forever begin
       ahb_fifo.get(item);
-      if (item.addr[31:28] == 4'h1 && item.write && item.addr[3:0] == 4'hC) begin
+      if (item.addr[31:28] == 4'h1 && item.write && item.addr[5:0] == 4'hC) begin
         tx_exp_data = item.data[7:0];  // 记录AHB写入的TXD值
       end
     end
