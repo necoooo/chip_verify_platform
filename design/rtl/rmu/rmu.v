@@ -43,8 +43,6 @@ module rmu #(
   reg        pin_prev_q;
   reg        pin_filtered_d, pin_filtered_q;
   reg        filter_active_d, filter_active_q;
-
-  // 双触发同步
   always @(posedge clk_i or negedge pin_rst_ni) begin
     if (!pin_rst_ni) begin
       pin_sync1_q <= 1'b0;
@@ -183,5 +181,24 @@ module rmu #(
                     (haddr_i[3:0] == 4'h4) ? {29'h0, filter_active_q, por_rst_ni,
                                               pin_filtered_q} :
                     32'h0;
+
+  // ========================================================================
+  // V1.1: 上电初始化 (修复pin/por直连高时无异步复位导致X态扩散)
+  // ========================================================================
+  initial begin
+    pin_sync1_q     = 1'b1;
+    pin_sync2_q     = 1'b1;
+    pin_prev_q      = 1'b1;
+    pin_filtered_q  = 1'b1;
+    filter_cnt_q    = 15'd0;
+    filter_active_q = 1'b0;
+    soft_rst_q      = 5'b11111;
+    sys_sync_q      = 2'b11;
+    uart_sync_q     = 2'b11;
+    dsp_sync_q      = 2'b11;
+    timer_sync_q    = 2'b11;
+    sram_sync_q     = 2'b11;
+    bfm_sync_q      = 2'b11;
+  end
 
 endmodule
