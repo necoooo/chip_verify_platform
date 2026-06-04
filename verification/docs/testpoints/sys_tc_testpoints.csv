@@ -1,0 +1,13 @@
+测试点来源（关联设计文档章节）,主测试点（模块核心功能点）,子测试点（主测试点的细分场景）,功能描述（测试点对应的设计行为）,覆盖情况描述（是否覆盖及覆盖方式）,覆盖率分析（未覆盖原因或覆盖达标标准）,对应测试用例
+"2 简介：SYS_TC是简易向下计数定时器","TP_TC_001: 上电默认状态","TP_TC_001.01: 复位后LOAD默认值=49999","复位后TC_LOAD默认值=49999(1ms@50MHz)","已覆盖：test_sys_tc_sanity用例读取TC_LOAD寄存器","覆盖达标标准：复位后TC_LOAD=32'd49999",test_sys_tc_sanity
+"8.1 定时操作：使能后向下计数","TP_TC_002: 定时器基本计数功能","TP_TC_002.01: EN=1后计数器向下递减","每个cycle TC_COUNT递减1","已覆盖：test_sys_tc_count_down用例使能定时器后连续读取COUNT","覆盖达标标准：每个cycle COUNT递减1",test_sys_tc_count_down
+"8.1 定时操作：自动重载","TP_TC_003: 计数器自动重载","TP_TC_003.01: COUNT=0自动重载LOAD值","COUNT减到0自动重新加载LOAD值后继续计数","已覆盖：test_sys_tc_auto_reload用例监测COUNT到0后跳变","覆盖达标标准：COUNT=0下一cycle COUNT=LOAD值",test_sys_tc_auto_reload
+"8.1 定时操作","TP_TC_003: 计数器自动重载","TP_TC_003.02: 自定义LOAD值重载","修改TC_LOAD为非默认值后验证重载值","已覆盖：test_sys_tc_custom_load用例修改LOAD=1000","覆盖达标标准：重载值=新配置的LOAD值",test_sys_tc_custom_load
+"8.1 定时操作：可屏蔽中断","TP_TC_004: 定时中断功能","TP_TC_004.01: IE=1时中断输出","EN=1/IE=1时，COUNT=0产生tc_int脉冲","已覆盖：test_sys_tc_int_enabled用例配置EN=1/IE=1监测tc_int","覆盖达标标准：COUNT=0时tc_int=1(1cycle脉冲)",test_sys_tc_int_enabled
+"8.1 定时操作","TP_TC_004: 定时中断功能","TP_TC_004.02: IE=0时无中断","EN=1/IE=0时COUNT=0不产生tc_int","已覆盖：test_sys_tc_int_disabled用例配置IE=0","覆盖达标标准：IE=0时无tc_int脉冲",test_sys_tc_int_disabled
+"8.1 定时操作","TP_TC_004: 定时中断功能","TP_TC_004.03: EN=0时计数器停止","EN=0后计数器停止COUNT保持不变","已覆盖：test_sys_tc_en_disable用例中途关闭EN","覆盖达标标准：EN=0后COUNT不变",test_sys_tc_en_disable
+"9.4 TC_STATUS寄存器","TP_TC_005: 中断标志操作","TP_TC_005.01: INT_FLAG写1清零","中断产生后写STATUS[0]=1清除标志","已覆盖：test_sys_tc_int_flag_clear用例验证写1清零","覆盖达标标准：写1清零后INT_FLAG=0",test_sys_tc_int_flag_clear
+"9 寄存器描述","TP_TC_006: 寄存器访问","TP_TC_006.01: 所有寄存器读写属性验证","TC_CTRL(RW)/TC_LOAD(RW)/TC_COUNT(RO)/TC_STATUS(RW)","已覆盖：test_sys_tc_reg_rw用例遍历所有寄存器","覆盖达标标准：寄存器属性符合设计",test_sys_tc_reg_rw
+"8.2 定时周期计算","TP_TC_007: 定时周期精度","TP_TC_007.01: 中断间隔=LOAD+1 cycle","配置LOAD=N，测量中断间隔为N+1 cycle","已覆盖：test_sys_tc_period_accuracy用例时序测量","覆盖达标标准：中断间隔=LOAD+1个cycle",test_sys_tc_period_accuracy
+"8.1 定时操作：边界条件","TP_TC_008: 计数器边界条件","TP_TC_008.01: LOAD=0边界","配置LOAD=0，使能后立即触发中断","已覆盖：test_sys_tc_load_zero用例配置LOAD=0","覆盖达标标准：LOAD=0时立即产生中断",test_sys_tc_load_zero
+"8.1 定时操作","TP_TC_008: 计数器边界条件","TP_TC_008.02: LOAD=0xFFFFFFFF(最大值)","配置最大LOAD值验证正常工作","已覆盖：test_sys_tc_load_max用例配置LOAD=0xFFFFFFFF","覆盖达标标准：计数器从最大值正常递减",test_sys_tc_load_max

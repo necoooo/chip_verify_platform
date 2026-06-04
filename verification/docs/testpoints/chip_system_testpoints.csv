@@ -1,0 +1,16 @@
+测试点来源（关联设计文档章节）,主测试点（模块核心功能点）,子测试点（主测试点的细分场景）,功能描述（测试点对应的设计行为）,覆盖情况描述（是否覆盖及覆盖方式）,覆盖率分析（未覆盖原因或覆盖达标标准）,对应测试用例
+"2.2 模块列表：8模块集成","TP_CHIP_001: 系统上电与启动","TP_CHIP_001.01: 上电复位序列","por_rst_n→pin_rst_n(500us滤波)→各模块复位依次释放","已覆盖：test_chip_sanity用例模拟完整上电复位序列","覆盖达标标准：所有复位按顺序释放系统正常启动",test_chip_sanity
+"2.2 模块列表","TP_CHIP_001: 系统上电与启动","TP_CHIP_001.02: 上电后默认hclk=50MHz","默认CMU选择pll_clk，hclk=50MHz","已覆盖：test_chip_sanity用例测量hclk周期","覆盖达标标准：hclk=50MHz±1%",test_chip_sanity
+"3.1 时钟架构","TP_CHIP_002: 系统时钟分发","TP_CHIP_002.01: hclk到达所有模块","验证CMU/RMU/BFM/Matrix/UART/DSP/SYS_TC/SRAM_ECC收到hclk","已覆盖：test_chip_clk_distribution用例monitor检查","覆盖达标标准：所有模块时钟端口收到hclk",test_chip_clk_distribution
+"3.2 复位架构","TP_CHIP_003: 系统复位网络","TP_CHIP_003.01: 6路独立复位正确连接","sys_rst_n/uart_rst_n/dsp_rst_n/timer_rst_n/sram_rst_n/bfm_rst_n正确到各模块","已覆盖：test_chip_reset_network用例monitor检查","覆盖达标标准：复位连接与chip_top一致",test_chip_reset_network
+"4 AHB总线：1主5从","TP_CHIP_004: AHB总线互联","TP_CHIP_004.01: BFM→Matrix→全部6路Slave读写","通过AHB访问所有Slave模块寄存器","已覆盖：test_chip_ahb_all_slaves用例遍历6路Slave","覆盖达标标准：6路Slave均可AHB读写",test_chip_ahb_all_slaves
+"5 地址映射","TP_CHIP_005: 地址空间隔离","TP_CHIP_005.01: 各模块地址空间无重叠","SRAM(0x0)/UART(0x1)/DSP(0x2)/SYS_TC(0x3)/RMU(0x4)/CMU(0x5)","已覆盖：test_chip_addr_space用例验证地址隔离","覆盖达标标准：各模块地址独立无冲突",test_chip_addr_space
+"6 中断映射：4路中断","TP_CHIP_006: 中断系统","TP_CHIP_006.01: SYS_TC中断chip级端口输出","tc_int_o与SYS_TC内部信号一致","已覆盖：test_chip_int_sys_tc用例使能定时中断","覆盖达标标准：tc_int_o与tc_int一致",test_chip_int_sys_tc
+"6 中断映射","TP_CHIP_006: 中断系统","TP_CHIP_006.02: UART tx/rx中断输出","uart_tx_int_o/uart_rx_int_o与UART内部一致","已覆盖：test_chip_int_uart用例触发UART收发","覆盖达标标准：uart中断输出正确",test_chip_int_uart
+"6 中断映射","TP_CHIP_006: 中断系统","TP_CHIP_006.03: DSP done中断输出","dsp_done_int_o与DSP内部done一致","已覆盖：test_chip_int_dsp用例触发DSP运算","覆盖达标标准：dsp_done_int_o正确",test_chip_int_dsp
+"6 中断映射","TP_CHIP_006: 中断系统","TP_CHIP_006.04: 多中断并发","SYS_TC+UART+DSP同时中断","已覆盖：test_chip_int_concurrent用例同时触发多路中断","覆盖达标标准：所有中断正确输出无丢失",test_chip_int_concurrent
+"8 SRAM_ECC：ECC状态信号","TP_CHIP_007: ECC状态信号","TP_CHIP_007.01: ecc_err/ecc_sec/ecc_ded顶层连接","SRAM_ECC内部ECC状态连接到chip_top端口","已覆盖：test_chip_ecc_status用例注入ECC错误","覆盖达标标准：顶层端口与SRAM_ECC内部状态一致",test_chip_ecc_status
+"3.2 复位架构：软件复位","TP_CHIP_008: 跨模块软复位隔离","TP_CHIP_008.01: 单模块软复位不影响其他","RMU复位UART，DSP/SYS_TC/SRAM正常","已覆盖：test_chip_soft_reset_isolation用例单独复位UART","覆盖达标标准：单模块复位其他模块功能正常",test_chip_soft_reset_isolation
+"7 关键性能指标","TP_CHIP_009: 系统级并发操作","TP_CHIP_009.01: UART收发+DSP运算+SYS_TC定时+SRAM读写并发","多模块同时运行无死锁","已覆盖：test_chip_concurrent用例并发sequence","覆盖达标标准：并发操作各模块功能正确",test_chip_concurrent
+"7 关键性能指标","TP_CHIP_009: 系统级并发操作","TP_CHIP_009.02: CMU时钟切换期间系统稳定性","时钟切换期间AHB访问正常","已覆盖：test_chip_clk_switch_stress用例切换→访问","覆盖达标标准：切换后系统恢复正常工作",test_chip_clk_switch_stress
+"7 关键性能指标","TP_CHIP_009: 系统级并发操作","TP_CHIP_009.03: 系统压力测试","长时间多模块随机并发操作","已覆盖：test_chip_stress用例长时间随机测试","覆盖达标标准：压力测试无死锁无错误",test_chip_stress

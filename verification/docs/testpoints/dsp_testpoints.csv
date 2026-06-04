@@ -1,0 +1,12 @@
+测试点来源（关联设计文档章节）,主测试点（模块核心功能点）,子测试点（主测试点的细分场景）,功能描述（测试点对应的设计行为）,覆盖情况描述（是否覆盖及覆盖方式）,覆盖率分析（未覆盖原因或覆盖达标标准）,对应测试用例
+"2 简介：DSP是简易8位算术运算单元","TP_DSP_001: 8位加法运算","TP_DSP_001.01: 基本加法(无进位)","OPA=0x03, OPB=0x05, OP_SEL=0(ADD)，RESULT=0x08","已覆盖：test_dsp_sanity用例写入OPA/OPB/CTRL，等待DONE后读取RESULT与期望值比较","覆盖达标标准：RESULT=OPA+OPB(9位，高bit为进位标志)",test_dsp_sanity
+"8.1 运算操作：支持加法","TP_DSP_001: 8位加法运算","TP_DSP_001.02: 加法进位","OPA=0xFF, OPB=0x01, OP_SEL=0(ADD)，RESULT=0x100(进位)","已覆盖：test_dsp_add_carry用例满量程加法测试","覆盖达标标准：RESULT[8]=1(进位)，RESULT[7:0]=0x00",test_dsp_add_carry
+"8.1 运算操作：支持减法","TP_DSP_002: 8位减法运算","TP_DSP_002.01: 基本减法(结果正值)","OPA=0x08, OPB=0x03, OP_SEL=1(SUB)，RESULT=0x005","已覆盖：test_dsp_sub_basic用例写入操作数验证减法结果","覆盖达标标准：RESULT=OPA-OPB(9位，高bit为借位标志)",test_dsp_sub_basic
+"8.1 运算操作：支持减法","TP_DSP_002: 8位减法运算","TP_DSP_002.02: 减法借位(结果负值)","OPA=0x03, OPB=0x08, OP_SEL=1(SUB)，RESULT=0x1FB(借位)","已覆盖：test_dsp_sub_borrow用例小减大操作数测试","覆盖达标标准：RESULT[8]=1(借位)",test_dsp_sub_borrow
+"9 寄存器描述","TP_DSP_003: DSP寄存器访问","TP_DSP_003.01: 所有寄存器读写属性验证","OPA(RW)/OPB(RW)/CTRL(RW)/RESULT(RO)/STATUS(RO)","已覆盖：test_dsp_reg_rw用例遍历所有寄存器","覆盖达标标准：寄存器属性符合设计(RW可读写/RO只读/RSVD位读回0)",test_dsp_reg_rw
+"8.1 运算操作：OP_SEL随机化","TP_DSP_004: 随机运算验证","TP_DSP_004.01: OP_SEL/OPA/OPB随机化","随机生成OP_SEL(0/1)/OPA(0-255)/OPB(0-255)，验证结果正确","已覆盖：test_dsp_random用例生成1000次随机操作数组合","覆盖达标标准：1000次随机测试全部通过",test_dsp_random
+"8.2 运算流程：状态机验证","TP_DSP_005: 运算状态机验证","TP_DSP_005.01: 正确运算流程","OPA→OPB→CTRL(START=1)→等待DONE→读RESULT","已覆盖：test_dsp_flow_normal用例按标准流程操作","覆盖达标标准：标准流程结果正确",test_dsp_flow_normal
+"8.2 运算流程","TP_DSP_005: 运算状态机验证","TP_DSP_005.02: 未配置OPA直接启动","仅写CTRL(START=1)而不先写OPA，验证使用默认值0","已覆盖：test_dsp_start_without_opa用例异常流程测试","覆盖达标标准：未配置操作数时使用复位默认值0",test_dsp_start_without_opa
+"8.2 运算流程","TP_DSP_005: 运算状态机验证","TP_DSP_005.03: 连续两次启动","第一次运算DONE后立即再次启动，验证状态机正确复位","已覆盖：test_dsp_consecutive_start用例连续启动sequence","覆盖达标标准：连续两次运算结果各自正确",test_dsp_consecutive_start
+"3 特点：运算完成中断","TP_DSP_006: 运算完成中断","TP_DSP_006.01: done_int脉冲输出","DONE=1时done_int=1，产生一个周期脉冲","已覆盖：test_dsp_done_int用例monitor监测done_int信号","覆盖达标标准：done_int与DONE同时有效，脉冲宽度=1cycle",test_dsp_done_int
+"8.2 运算流程","TP_DSP_007: STATUS.DONE读后自动清零","TP_DSP_007.01: 读取STATUS后DONE位清零","读取DSP_STATUS寄存器后DONE位自动清零","已覆盖：test_dsp_status_clear用例读STATUS后再读验证DONE清零","覆盖达标标准：第二次读DONE=0",test_dsp_status_clear

@@ -6,6 +6,7 @@
 // 切换策略：先关后开（Gate off current → Switch → Gate on new）
 // AHB寄存器：0x5000_0000 CMU_CLK_SEL, 0x5000_0004 CMU_STATUS
 // 状态机：三段式结构（状态寄存器 + 下一状态逻辑 + 输出寄存器）
+// V1.2: FSM时钟改用pll_clk_i(始终运行), 修复时钟切换时hclk停振导致FSM卡死
 
 module cmu (
   input  wire       rch_clk_i,        // 内部RC振荡器 16MHz
@@ -52,18 +53,21 @@ module cmu (
   assign hclk_o = clk_sel ? rch_gated : pll_gated;
 
   // ========================================================================
-  // Block 1: 状态转移时序逻辑
+  // 上电初始化（默认选择pll_clk, 50MHz）
   // ========================================================================
-  // 注：CMU无外部复位，上电默认pll_clk域（clk_sel=0），使用异步复位架构
-  always @(posedge hclk_o or negedge clk_sel) begin
-    if (!clk_sel) begin            // pll_clk域复位（默认域）
-      curr_state <= S_IDLE;
-    end else begin                 // rch_clk域复位
-      curr_state <= S_IDLE;
-    end
+  initial begin
+    curr_state  = S_IDLE;
+    clk_sel     = 1'b0;
+    clk_sel_req = 1'b0;
+    gate_pll    = 1'b1;
+    gate_rch    = 1'b0;
+    switch_cnt  = 4'd0;
   end
 
-  always @(posedge hclk_o) begin
+  // ========================================================================
+  // Block 1: 状态转移时序逻辑 (pll_clk_i域, 始终运行)
+  // ========================================================================
+  always @(posedge pll_clk_i) begin
     curr_state <= next_state;
   end
 
@@ -101,25 +105,9 @@ module cmu (
   end
 
   // ========================================================================
-  // Block 3: 输出时序逻辑（寄存器输出，包含数据通路和AHB处理）
+  // Block 3: 输出和数据通路逻辑 (pll_clk_i域, 始终运行)
   // ========================================================================
-  always @(posedge hclk_o or negedge clk_sel) begin
-    if (!clk_sel) begin            // pll_clk域复位
-      clk_sel      <= 1'b0;
-      clk_sel_req  <= 1'b0;
-      gate_pll     <= 1'b1;
-      gate_rch     <= 1'b0;
-      switch_cnt   <= 4'd0;
-    end else begin                 // rch_clk域复位
-      clk_sel      <= 1'b1;
-      clk_sel_req  <= 1'b0;
-      gate_pll     <= 1'b0;
-      gate_rch     <= 1'b1;
-      switch_cnt   <= 4'd0;
-    end
-  end
-
-  always @(posedge hclk_o) begin
+  always @(posedge pll_clk_i) begin
     case (curr_state)
       S_IDLE: begin
         switch_cnt <= 4'd0;

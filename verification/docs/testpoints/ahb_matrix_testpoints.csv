@@ -1,0 +1,8 @@
+测试点来源（关联设计文档章节）,主测试点（模块核心功能点）,子测试点（主测试点的细分场景）,功能描述（测试点对应的设计行为）,覆盖情况描述（是否覆盖及覆盖方式）,覆盖率分析（未覆盖原因或覆盖达标标准）,对应测试用例
+"7 地址译码：HADDR[31:28]译码","TP_MATRIX_001: 地址译码路由","TP_MATRIX_001.01: 6路Slave译码正确","HADDR[31:28]=0→SRAM,1→UART,2→DSP,3→SYS_TC,4→RMU,5→CMU","已覆盖：test_ahb_matrix_sanity用例遍历6路地址验证HSEL","覆盖达标标准：每路HSEL独热且正确",test_ahb_matrix_sanity
+"7 地址译码","TP_MATRIX_001: 地址译码路由","TP_MATRIX_001.02: 保留地址(HADDR[31:28]=6~15)返回ERROR","保留地址无HSEL选中返回HRESP=ERROR","已覆盖：test_ahb_matrix_addr_reserved用例访问0x60000000","覆盖达标标准：无HSEL选中HRESP=ERROR HRDATA=0xDEAD_BEEF",test_ahb_matrix_addr_reserved
+"5 结构框图：组合逻辑","TP_MATRIX_002: IDLE周期无HSEL","TP_MATRIX_002.01: HTRANS=IDLE不产生HSEL","HTRANS[1]=0时HSEL全0","已覆盖：test_ahb_matrix_idle_hsel用例驱动HTRANS=IDLE","覆盖达标标准：HTRANS[1]=0时HSEL=6'b0",test_ahb_matrix_idle_hsel
+"8.2 响应多路复用","TP_MATRIX_003: Slave→Master响应复用","TP_MATRIX_003.01: 6路HRDATA/HREADY/HRESP复用正确","根据HSEL选中正确Slave的响应回传给Master","已覆盖：test_ahb_matrix_mux用例遍历6路Slave验证响应","覆盖达标标准：Master侧响应=选中Slave响应",test_ahb_matrix_mux
+"5 结构框图：共享信号直通","TP_MATRIX_004: Master→Slave信号直通","TP_MATRIX_004.01: 地址/控制/写数据组合逻辑直通","s_haddr/s_hwrite/s_hwdata等与Master信号一致","已覆盖：test_ahb_matrix_passthrough用例monitor比对","覆盖达标标准：共享信号与Master信号完全一致",test_ahb_matrix_passthrough
+"5 结构框图：0周期延迟","TP_MATRIX_005: 纯组合逻辑零延迟","TP_MATRIX_005.01: HSEL与HADDR[31:28]同步变化","无寄存器延迟","已覆盖：test_ahb_matrix_zero_delay用例SVA断言","覆盖达标标准：HSEL与HADDR同周期生效",test_ahb_matrix_zero_delay
+"5 结构框图","TP_MATRIX_006: 32位数据透明传输","TP_MATRIX_006.01: 32位全bit遍历","随机数据验证全bit传输无截断","已覆盖：test_ahb_matrix_data_width用例随机32位数据","覆盖达标标准：所有32bit透明传输",test_ahb_matrix_data_width

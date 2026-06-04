@@ -33,3 +33,25 @@ __pycache__/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Web research cache
+.firecrawl/
+
+# Backup RTL versions
+*_v2*.*
+*_v2*
+
+# Sim directory: only keep Makefile
+verification/sim/*
+!verification/sim/Makefile
+
+# Simulation artifacts (in sim/)
+*.daidir/
+csrc/
+coverage/
+vc_hdrs.h
+ucli.key
+tr_db.log
+test.log
+*.fsdb
+.last_module

@@ -1,0 +1,15 @@
+测试点来源（关联设计文档章节）,主测试点（模块核心功能点）,子测试点（主测试点的细分场景）,功能描述（测试点对应的设计行为）,覆盖情况描述（是否覆盖及覆盖方式）,覆盖率分析（未覆盖原因或覆盖达标标准）,对应测试用例
+"2 简介：256×32bit SRAM带ECC保护","TP_SRAM_001: SRAM基本读写","TP_SRAM_001.01: 单字写入与读出","向地址0写入0xDEAD_BEEF，读回验证数据一致","已覆盖：test_sram_ecc_sanity用例通过AHB写SRAM后读回","覆盖达标标准：读回数据=写入数据",test_sram_ecc_sanity
+"2 简介：256字存储空间","TP_SRAM_001: SRAM基本读写","TP_SRAM_001.02: 全地址空间遍历","对256个地址分别写入不同数据并读回验证","已覆盖：test_sram_ecc_full_addr用例遍历0x00-0xFF","覆盖达标标准：256个地址读写全部正确",test_sram_ecc_full_addr
+"2 简介","TP_SRAM_001: SRAM基本读写","TP_SRAM_001.03: 同一地址连续多次写入","对同一地址连续写入不同值验证最后一次写入生效","已覆盖：test_sram_ecc_consecutive_write用例","覆盖达标标准：读回最后写入的值",test_sram_ecc_consecutive_write
+"4 ECC算法：SEC-DED扩展汉明码","TP_SRAM_002: ECC单比特纠错(SEC)","TP_SRAM_002.01: 数据位单bit错误自动纠正","注入单bit错误后读取时自动纠正为正确值","已覆盖：test_sram_ecc_sec_correct用例通过ECC_CTRL错误注入","覆盖达标标准：单bit错误被纠正，ecc_sec=1，数据正确",test_sram_ecc_sec_correct
+"4 ECC算法","TP_SRAM_002: ECC单比特纠错(SEC)","TP_SRAM_002.02: 遍历所有32数据位单bit错误","每个数据位分别注入单bit错误验证纠正","已覆盖：test_sram_ecc_sec_all_bits用例遍历bit0-bit31","覆盖达标标准：32个位置单bit错误全部纠正",test_sram_ecc_sec_all_bits
+"4 ECC算法：双比特检错","TP_SRAM_003: ECC双比特检错(DED)","TP_SRAM_003.01: 双bit错误检测(不纠正)","翻转2个数据位后ecc_ded=1，数据不纠正","已覆盖：test_sram_ecc_ded_detect用例注入2bit错误","覆盖达标标准：ecc_ded=1，ecc_err=1",test_sram_ecc_ded_detect
+"4 ECC算法","TP_SRAM_003: ECC双比特检错(DED)","TP_SRAM_003.02: 不同位置双bit错误组合","多种双bit组合验证DED检测","已覆盖：test_sram_ecc_ded_combinations用例","覆盖达标标准：所有双bit组合正确检测",test_sram_ecc_ded_combinations
+"9 寄存器描述","TP_SRAM_004: ECC状态寄存器","TP_SRAM_004.01: ECC_ERR_CNT错误计数递增","每次ECC错误时ERR_CNT递增","已覆盖：test_sram_ecc_err_cnt用例连续注入错误","覆盖达标标准：ECC_ERR_CNT=错误发生次数",test_sram_ecc_err_cnt
+"9 寄存器描述","TP_SRAM_004: ECC状态寄存器","TP_SRAM_004.02: ECC_ERR_ADDR错误地址记录","记录最近一次ECC错误地址","已覆盖：test_sram_ecc_err_addr用例验证地址记录","覆盖达标标准：ECC_ERR_ADDR=错误注入地址",test_sram_ecc_err_addr
+"4 ECC算法","TP_SRAM_005: ECC编解码正确性","TP_SRAM_005.01: 随机数据ECC编解码1000次","随机数据验证ECC编码和解码往返正确","已覆盖：test_sram_ecc_random用例随机化数据","覆盖达标标准：1000次编码→解码往返数据正确",test_sram_ecc_random
+"9 寄存器描述","TP_SRAM_006: 寄存器访问","TP_SRAM_006.01: ECC_CTRL/ECC_ERR_CNT/ECC_ERR_ADDR读写","验证控制寄存器和状态寄存器访问","已覆盖：test_sram_ecc_reg_rw用例","覆盖达标标准：寄存器属性符合设计",test_sram_ecc_reg_rw
+"7 时钟和复位","TP_SRAM_007: 复位行为","TP_SRAM_007.01: 复位后数据保持","复位后SRAM内容不变","已覆盖：test_sram_ecc_reset_data_keep用例写→复位→读","覆盖达标标准：复位后写入的数据保持不变",test_sram_ecc_reset_data_keep
+"7 时钟和复位","TP_SRAM_007: 复位行为","TP_SRAM_007.02: 复位后ECC状态清零","复位后ECC_ERR_CNT/ECC_ERR_ADDR清零","已覆盖：test_sram_ecc_reset_ecc_clear用例","覆盖达标标准：复位后ECC状态寄存器=0",test_sram_ecc_reset_ecc_clear
+"3 特点：AHB-Lite从机接口","TP_SRAM_008: 地址空间","TP_SRAM_008.01: 数据空间(0x00-0x3FC)与寄存器空间(0x400+)隔离","两个地址空间独立访问","已覆盖：test_sram_ecc_addr_space用例","覆盖达标标准：数据与寄存器空间互不干扰",test_sram_ecc_addr_space

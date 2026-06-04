@@ -1,0 +1,19 @@
+测试点来源（关联设计文档章节）,主测试点（模块核心功能点）,子测试点（主测试点的细分场景）,功能描述（测试点对应的设计行为）,覆盖情况描述（是否覆盖及覆盖方式）,覆盖率分析（未覆盖原因或覆盖达标标准）,对应测试用例
+"2 简介：RMU是芯片的复位控制中枢","TP_RMU_001: 双复位源输入与全局复位生成","TP_RMU_001.01: por_rst_n单独复位","仅por_rst_n拉低时，全局复位sys_rst_n拉低，所有模块复位拉低","已覆盖：test_rmu_por_reset用例拉低por_rst_n，检查所有复位输出为低","覆盖达标标准：por_rst_n=0时所有复位输出为0",test_rmu_por_reset
+"2 简介：汇总pin_rst_n和por_rst_n","TP_RMU_001: 双复位源输入与全局复位生成","TP_RMU_001.02: pin_rst_n(滤波后)单独复位","仅pin_rst_n拉低(经500us滤波后)，全局复位拉低","已覆盖：test_rmu_pin_reset用例拉低pin_rst_n并等待滤波窗口后，检查复位输出","覆盖达标标准：滤波后pin_rst_n=0时所有复位输出为0",test_rmu_pin_reset
+"2 简介：pin_rst_n和por_rst_n联合复位","TP_RMU_001: 双复位源输入与全局复位生成","TP_RMU_001.03: pin_rst_n和por_rst_n同时复位","两路复位同时拉低，全局复位生效","已覆盖：test_rmu_dual_reset用例同时拉低pin_rst_n和por_rst_n","覆盖达标标准：任意一路复位为低时对应模块复位为低",test_rmu_dual_reset
+"3 特点：500us数字滤波","TP_RMU_002: pin_rst_n 500us数字滤波","TP_RMU_002.01: 滤波窗口内短脉冲被滤除","pin_rst_n出现宽度小于500us的低脉冲，滤波器不触发有效复位","已覆盖：test_rmu_filter_glitch用例生成宽度24000cycle的低脉冲，验证pin_filtered_n不变","覆盖达标标准：脉冲宽度<25000cycle时pin_filtered_n保持高电平",test_rmu_filter_glitch
+"3 特点：500us数字滤波","TP_RMU_002: pin_rst_n 500us数字滤波","TP_RMU_002.02: 滤波窗口后有效复位触发","pin_rst_n持续低超过500us，滤波器触发有效复位","已覆盖：test_rmu_filter_valid用例生成宽度26000cycle的低脉冲","覆盖达标标准：脉冲宽度>=25000cycle时pin_filtered_n最终拉低",test_rmu_filter_valid
+"3 特点：500us数字滤波","TP_RMU_002: pin_rst_n 500us数字滤波","TP_RMU_002.03: 滤波计数重置(毛刺恢复)","滤波进行中pin_rst_n恢复高电平，计数器重置","已覆盖：test_rmu_filter_recovery用例在滤波窗口内恢复pin_rst_n=1","覆盖达标标准：滤波中断后计数器重置，pin_filtered_n保持原值",test_rmu_filter_recovery
+"3 特点：各模块独立软复位","TP_RMU_003: 模块独立软复位控制","TP_RMU_003.01: UART软复位","写RMU_SRST[0]=0使UART复位，写1释放","已覆盖：test_rmu_soft_reset_uart用例操作RMU_SRST[0]，监测uart_rst_n","覆盖达标标准：bit[0]=0时uart_rst_n=0，bit[0]=1时uart_rst_n=1",test_rmu_soft_reset_uart
+"3 特点：各模块独立软复位","TP_RMU_003: 模块独立软复位控制","TP_RMU_003.02: DSP软复位","写RMU_SRST[1]=0/1控制dsp_rst_n","已覆盖：test_rmu_soft_reset_dsp用例操作RMU_SRST[1]","覆盖达标标准：bit[1]正确控制dsp_rst_n",test_rmu_soft_reset_dsp
+"3 特点：各模块独立软复位","TP_RMU_003: 模块独立软复位控制","TP_RMU_003.03: Timer软复位","写RMU_SRST[2]=0/1控制timer_rst_n","已覆盖：test_rmu_soft_reset_timer用例操作RMU_SRST[2]","覆盖达标标准：bit[2]正确控制timer_rst_n",test_rmu_soft_reset_timer
+"3 特点：各模块独立软复位","TP_RMU_003: 模块独立软复位控制","TP_RMU_003.04: SRAM软复位","写RMU_SRST[3]=0/1控制sram_rst_n","已覆盖：test_rmu_soft_reset_sram用例操作RMU_SRST[3]","覆盖达标标准：bit[3]正确控制sram_rst_n",test_rmu_soft_reset_sram
+"3 特点：各模块独立软复位","TP_RMU_003: 模块独立软复位控制","TP_RMU_003.05: BFM软复位","写RMU_SRST[4]=0/1控制bfm_rst_n","已覆盖：test_rmu_soft_reset_bfm用例操作RMU_SRST[4]","覆盖达标标准：bit[4]正确控制bfm_rst_n",test_rmu_soft_reset_bfm
+"3 特点：各模块独立软复位","TP_RMU_003: 模块独立软复位控制","TP_RMU_003.06: 多模块同时软复位","同时写RMU_SRST多bit为0，验证各模块同时进入复位","已覆盖：test_rmu_soft_reset_multi用例将多个bit写0","覆盖达标标准：多个模块复位同时生效互不影响",test_rmu_soft_reset_multi
+"4 基本原理：模块复位=pin_filtered AND por_rst_n AND 软复位","TP_RMU_004: 复位信号组合逻辑","TP_RMU_004.01: 全局复位覆盖软复位","pin_rst_n拉低时即使软复位为释放状态，模块复位也应为0","已覆盖：test_rmu_reset_override用例pin_rst_n=0且RMU_SRST=全1","覆盖达标标准：pin_filtered_n=0时无论软复位为何值模块复位均为0",test_rmu_reset_override
+"4 基本原理","TP_RMU_004: 复位信号组合逻辑","TP_RMU_004.02: 软复位只影响对应模块","UART软复位不影响DSP等其他模块","已覆盖：test_rmu_soft_reset_isolation用例仅拉低UART软复位","覆盖达标标准：各模块软复位独立控制互不干扰",test_rmu_soft_reset_isolation
+"8.1 异步复位同步释放","TP_RMU_005: 异步复位同步释放","TP_RMU_005.01: 复位释放与hclk同步","复位释放经过双触发器同步，释放沿与hclk上升沿对齐","已覆盖：test_rmu_sync_release用例SVA断言检查复位释放时序","覆盖达标标准：复位释放后至少2cycle模块才开始工作",test_rmu_sync_release
+"9 寄存器描述","TP_RMU_006: RMU寄存器访问","TP_RMU_006.01: RMU_SRST读写","通过AHB读写RMU_SRST寄存器","已覆盖：test_rmu_reg_rw用例验证寄存器bit[4:0]读写","覆盖达标标准：读回值与写入值一致(仅bit[4:0]有效)",test_rmu_reg_rw
+"9 寄存器描述","TP_RMU_006: RMU寄存器访问","TP_RMU_006.02: RMU_STATUS状态读取","读取RMU_STATUS各状态位","已覆盖：test_rmu_reg_rw用例读取STATUS与仿真信号比较","覆盖达标标准：STATUS位与RTL内部信号一致",test_rmu_reg_rw
+"10 软件配置流程","TP_RMU_007: 软件复位流程验证","TP_RMU_007.01: 完整软复位流程(写0→等待→写1)","按照设计文档10节配置示例完成软复位操作","已覆盖：test_rmu_soft_reset_flow用例实现完整软复位流程","覆盖达标标准：操作流程完成后模块恢复正常工作",test_rmu_soft_reset_flow
