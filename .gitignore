@@ -55,3 +55,4 @@ tr_db.log
 test.log
 *.fsdb
 .last_module
+verification/docs/testpoints/~$*
