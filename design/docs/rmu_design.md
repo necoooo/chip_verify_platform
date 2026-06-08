@@ -2,7 +2,7 @@
 
 ## 设计文档
 
-**版本：V0.1.0 2026.05.28**
+**版本：V1.1.0 2026.06.04**
 
 ---
 
@@ -11,6 +11,7 @@
 | 版本号 | 修改人 | 修改日期 | 更改理由 | 主要更改内容 |
 |--------|--------|----------|----------|-------------|
 | V0.1.0 | — | 2026-05-28 | 初建 | RMU初始版本 |
+| V1.1.0 | — | 2026-06-04 | 验证反馈(BUG RMU-01) | 添加上电initial块，修复por_rst_ni直连高时滤波器寄存器无异步复位导致X态扩散 |
 
 ---
 
@@ -76,24 +77,26 @@ RMU 接收两组外部复位信号（pin_rst_n 和 por_rst_n），其中 pin_rst
 
 | 信号名 | 方向 | 位宽 | 说明 |
 |--------|------|------|------|
-| hclk | Input | 1 | AHB 总线时钟 |
-| hresetn | Input | 1 | AHB 总线复位（低有效） |
-| hsel | Input | 1 | AHB Slave 选择 |
-| haddr | Input | 32 | AHB 地址 |
-| hwrite | Input | 1 | AHB 读写控制 |
-| htrans | Input | 2 | AHB 传输类型 |
-| hwdata | Input | 32 | AHB 写数据 |
-| hrdata | Output | 32 | AHB 读数据 |
-| hready | Output | 1 | AHB 传输完成 |
-| hresp | Output | 2 | AHB 传输响应 |
-| pin_rst_n | Input | 1 | 外部引脚复位（低有效） |
-| por_rst_n | Input | 1 | 模拟域上电复位（低有效） |
-| sys_rst_n | Output | 1 | 系统全局复位 |
-| uart_rst_n | Output | 1 | UART 模块复位 |
-| dsp_rst_n | Output | 1 | DSP 模块复位 |
-| timer_rst_n | Output | 1 | SYS_TC 模块复位 |
-| sram_rst_n | Output | 1 | SRAM_ECC 模块复位 |
-| bfm_rst_n | Output | 1 | AHB BFM 模块复位 |
+| clk_i | Input | 1 | 系统时钟（通常50MHz） |
+| rst_ni | Input | 1 | RMU自身AHB复位（低有效） |
+| hsel_i | Input | 1 | AHB Slave 选择 |
+| haddr_i | Input | 32 | AHB 地址 |
+| hwrite_i | Input | 1 | AHB 读写控制 |
+| htrans_i | Input | 2 | AHB 传输类型 |
+| hwdata_i | Input | 32 | AHB 写数据 |
+| hrdata_o | Output | 32 | AHB 读数据 |
+| hready_o | Output | 1 | AHB 传输完成 |
+| hresp_o | Output | 2 | AHB 传输响应 |
+| pin_rst_ni | Input | 1 | 外部引脚复位（低有效） |
+| por_rst_ni | Input | 1 | 模拟域上电复位（低有效） |
+| sys_rst_no | Output | 1 | 系统全局复位 |
+| uart_rst_no | Output | 1 | UART 模块复位 |
+| dsp_rst_no | Output | 1 | DSP 模块复位 |
+| timer_rst_no | Output | 1 | SYS_TC 模块复位 |
+| sram_rst_no | Output | 1 | SRAM_ECC 模块复位 |
+| bfm_rst_no | Output | 1 | AHB BFM 模块复位 |
+
+> **V1.1变更**: 信号名统一为 `_i` (输入) / `_o` (输出) / `_ni` (低有效输入) / `_no` (低有效输出) 后缀规范。
 
 ---
 

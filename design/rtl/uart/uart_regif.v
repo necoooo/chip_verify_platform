@@ -6,6 +6,7 @@
 //   0x08: UART_STATUS — 状态寄存器
 //   0x0C: UART_TXD    — 发送数据寄存器
 //   0x10: UART_RXD    — 接收数据寄存器
+// V1.3: 新增rx_clear_o输出, 供uart_rx清除rx_pending标志
 
 module uart_regif (
   input  wire       clk_i,
@@ -38,7 +39,10 @@ module uart_regif (
 
   // 发送状态
   input  wire       tx_busy_i,
-  input  wire       tx_done_i
+  input  wire       tx_done_i,
+
+  // V1.3: 接收清除信号(STATUS读时清除rx_pending)
+  output wire       rx_clear_o
 );
 
   // 寄存器
@@ -64,6 +68,7 @@ module uart_regif (
   assign baud_div_o   = baud_div_q;
   assign tx_data_o    = tx_data_q;
   assign tx_start_o   = tx_start_q;
+  assign rx_clear_o   = rx_valid_clr;   // V1.3: STATUS读时通知uart_rx
 
   // 状态位锁存（set由硬件，clear由读操作）
   always @(posedge clk_i or negedge rst_ni) begin

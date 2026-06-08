@@ -3,6 +3,7 @@
 // 功能：串行输入检测 → 并行数据输出
 // 时序：检测起始位下降沿 → 在每位中点采样 → 输出8位数据
 // 状态机：三段式结构（状态寄存器 + 下一状态逻辑 + 输出寄存器）
+// V1.3: 修复rx_overflow_o NBA竞争导致溢出检测永不触发; 新增rx_clear_i清除机制
 
 module uart_rx (
   input  wire       clk_i,
@@ -11,6 +12,7 @@ module uart_rx (
   input  wire       rx_en_i,          // 接收使能
   input  wire       baud_tick_i,      // 波特率采样脉冲
   input  wire       uart_rx_i,        // 串行输入
+  input  wire       rx_clear_i,       // V1.3: 清除已读标志(来自regif STATUS读)
 
   output reg  [7:0] rx_data_o,        // 接收数据
   output reg        rx_valid_o,       // 接收数据有效脉冲
@@ -32,6 +34,7 @@ module uart_rx (
   // 数据通路寄存器
   reg [2:0] bit_cnt;
   reg [7:0] shift_reg;
+  reg       rx_pending_q;     // V1.3: 接收缓冲待读标志(替代NBA检查)
 
   // 同步寄存器（2级，避免亚稳态）
   reg rx_sync1, rx_sync2;
@@ -114,9 +117,15 @@ module uart_rx (
       frame_err_o   <= 1'b0;
       bit_cnt       <= 3'd0;
       shift_reg     <= 8'd0;
+      rx_pending_q  <= 1'b0;
     end else begin
       // 默认值
       rx_valid_o <= 1'b0;
+
+      // V1.3: rx_clear_i由regif在读STATUS时产生, 清除pending标志
+      if (rx_clear_i) begin
+        rx_pending_q <= 1'b0;
+      end
 
       case (curr_state)
         S_IDLE: begin
@@ -144,9 +153,11 @@ module uart_rx (
             if (rx_sync2) begin
               rx_data_o  <= shift_reg;
               rx_valid_o <= 1'b1;
-              if (rx_valid_o) begin
+              // V1.3: 使用rx_pending_q替代NBA竞争检查
+              if (rx_pending_q) begin
                 rx_overflow_o <= 1'b1;
               end
+              rx_pending_q <= 1'b1;
             end else begin
               frame_err_o <= 1'b1;
             end

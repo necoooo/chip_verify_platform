@@ -6,6 +6,7 @@
 //   0x08: DSP_CTRL   — 控制寄存器
 //   0x0C: DSP_RESULT — 运算结果
 //   0x10: DSP_STATUS — 状态寄存器
+// V1.1: 修复done_latch误清除(添加ahb_active+hwrite条件)
 
 module dsp_regif (
   input  wire       clk_i,
@@ -57,7 +58,8 @@ module dsp_regif (
     end else begin
       if (done_i) begin
         done_latch_q <= 1'b1;
-      end else if (haddr_i[3:0] == 4'h10) begin
+      // V1.1: 仅AHB读STATUS时清除, 避免空闲/写周期误清除
+      end else if (ahb_active && !hwrite_i && haddr_i[3:0] == 4'h10) begin
         done_latch_q <= 1'b0;
       end
     end

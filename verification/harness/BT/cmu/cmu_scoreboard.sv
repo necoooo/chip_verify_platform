@@ -1,23 +1,11 @@
-//--------------------------------------------------------------
-// CMU Scoreboard (cmu_scoreboard)
-//
-// 功能: CMU模块参考模型，维护期望的时钟选择状态并与DUT实际值比对
-// 检查项: CLK_SEL寄存器读写一致性、时钟源切换状态
-// 版本: V1.0 2026.05.29
-//--------------------------------------------------------------
-
+// CMU Scoreboard V1.1: 增强CLK_SEL/STATUS一致性+AHB协议+切换计数
 class cmu_scoreboard extends uvm_scoreboard;
   `uvm_component_utils(cmu_scoreboard)
-
-  // Analysis port订阅AHB monitor输出
   uvm_analysis_export #(ahb_sequence_item) ahb_export;
   uvm_tlm_analysis_fifo #(ahb_sequence_item) ahb_fifo;
 
-  // 期望状态
-  bit        exp_clk_sel;    // 期望时钟选择值
-
-  // 配置引用
-  cmu_env_config cfg;
+  bit        exp_clk_sel;
+  int        switch_count, read_count, write_count, error_count;
 
   function new(string name = "cmu_scoreboard", uvm_component parent = null);
     super.new(name, parent);
@@ -27,6 +15,7 @@ class cmu_scoreboard extends uvm_scoreboard;
     super.build_phase(phase);
     ahb_export = new("ahb_export", this);
     ahb_fifo   = new("ahb_fifo", this);
+    exp_clk_sel = 1'b0;
   endfunction
 
   function void connect_phase(uvm_phase phase);
@@ -34,48 +23,45 @@ class cmu_scoreboard extends uvm_scoreboard;
     ahb_export.connect(ahb_fifo.analysis_export);
   endfunction
 
-  //--------------------------------------------------------------
-  // Run Phase: 持续检查AHB事务
-  //--------------------------------------------------------------
   task run_phase(uvm_phase phase);
     ahb_sequence_item item;
-
-    `uvm_info(get_type_name(), "CMU Scoreboard starting...", UVM_MEDIUM)
-    exp_clk_sel = 1'b0;  // 复位默认值
-
+    `uvm_info(get_type_name(), "CMU Scoreboard V1.1 starting...", UVM_MEDIUM)
     forever begin
       ahb_fifo.get(item);
 
+      // 仅处理CMU地址空间(0x5000_0000)
+      if (item.addr[31:28] != 4'h5) continue;
+
+      if (item.resp != 2'b00) begin
+        `uvm_error(get_type_name(), $sformatf("AHB ERROR: addr=0x%0h resp=%b", item.addr, item.resp))
+        error_count++;
+      end
+
       if (item.write) begin
-        // 写操作：检查对CMU_CLK_SEL的写入
+        write_count++;
         if (item.addr[11:0] == 12'h000) begin
-          exp_clk_sel = item.data[0];  // 更新期望值
-          `uvm_info(get_type_name(),
-                    $sformatf("Scoreboard: CMU_CLK_SEL write -> exp_clk_sel=%0b", exp_clk_sel),
-                    UVM_MEDIUM)
+          if (exp_clk_sel != item.data[0]) switch_count++;
+          exp_clk_sel = item.data[0];
         end
       end else begin
-        // 读操作：比对期望值
+        read_count++;
         if (item.addr[11:0] == 12'h000) begin
           if (item.rdata[0] !== exp_clk_sel) begin
-            `uvm_error(get_type_name(),
-                       $sformatf("CMU_CLK_SEL mismatch: expected=%0b, got=%0b",
-                                 exp_clk_sel, item.rdata[0]))
-          end else begin
-            `uvm_info(get_type_name(),
-                      $sformatf("CMU_CLK_SEL match: %0b", exp_clk_sel), UVM_MEDIUM)
+            `uvm_error(get_type_name(), $sformatf("CLK_SEL mismatch: exp=%b got=%b", exp_clk_sel, item.rdata[0]))
+            error_count++;
           end
         end
-
         if (item.addr[11:0] == 12'h004) begin
           if (item.rdata[0] !== exp_clk_sel) begin
-            `uvm_error(get_type_name(),
-                       $sformatf("CMU_STATUS[0] mismatch: expected=%0b, got=%0b",
-                                 exp_clk_sel, item.rdata[0]))
+            `uvm_error(get_type_name(), $sformatf("STATUS[0] mismatch: exp=%b got=%b", exp_clk_sel, item.rdata[0]))
+            error_count++;
           end
         end
       end
     end
   endtask
 
-endclass : cmu_scoreboard
+  function void report_phase(uvm_phase phase);
+    `uvm_info(get_type_name(), $sformatf("R:%0d W:%0d Sw:%0d Err:%0d", read_count, write_count, switch_count, error_count), UVM_LOW)
+  endfunction
+endclass

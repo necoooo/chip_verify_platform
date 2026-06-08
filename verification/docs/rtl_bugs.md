@@ -1,6 +1,7 @@
 # RTL Bugs 记录
 
-**创建**: 2026-06-04 | **阶段**: Sanity 调试
+**创建**: 2026-06-04 | **阶段**: Sanity 调试 → 详细验证
+**最后更新**: 2026-06-08
 
 ---
 
@@ -9,6 +10,7 @@
 |----|--------|------|------|------|
 | CMU-01 | HIGH | 无上电复位, X态扩散至clk_sel/hclk_o | V1.1 initial块 | 0604 |
 | CMU-02 | HIGH | FSM用hclk_o做时钟, 切换时钟时hclk停振→死锁 | V1.2 改用pll_clk_i | 0604 |
+| CMU-03 | HIGH | AHB接口(hclk域)与FSM(pll_clk_i域)跨时钟域: 切到rch(16MHz)后AHB写无法被50MHz FSM可靠采样→无法切回pll | V1.3 CDC同步器 | 0608 |
 
 ## RMU
 | ID | 严重度 | 描述 | 修复 | 日期 |
@@ -29,10 +31,16 @@
 | UART-01 | HIGH | 寄存器地址解码用haddr[3:0], RXD(0x10)与CTRL(0x00)冲突 | 改为[5:0] | 0604 |
 | UART-02 | HIGH | TX/RX共享波特率计数器, 回环时互相干扰 | V1.2 独立计数器 | 0604 |
 | UART-03 | MEDIUM | agent: is_active遮蔽+缺sequencer+uart_if无hclk | 修复agent架构 | 0604 |
-| UART-04 | MEDIUM | driver NBA(`<=`)驱动virtual interface不生效 | 📝 待修复 | 0604 |
+| UART-04 | MEDIUM | driver NBA(`<=`)驱动virtual interface不生效 | 📝 待修复(验证环境) | 0604 |
+| UART-05 | HIGH | rx_overflow_o: NBA导致if(rx_valid_o)永远读到旧值0, 溢出永不检测 | V1.3 rx_pending标志+rx_clear信号 | 0608 |
+
+## DSP
+| ID | 严重度 | 描述 | 修复 | 日期 |
+|----|--------|------|------|------|
+| DSP-01 | MEDIUM | done_latch清除未检查ahb_active/hwrite, 空闲周期误清除 | V1.1 添加ahb_active+!hwrite_i条件 | 0608 |
 
 ## AHB_MATRIX — 无RTL问题
 
 ---
 
-**统计**: HIGH 6(已修复5) | MEDIUM 3(已修复2) | 待修复 1
+**统计**: HIGH 8(已修复7) | MEDIUM 4(已修复3) | 待修复 1(UART-04验证环境) |

@@ -1,5 +1,6 @@
 // UART顶层模块 — 集成AHB寄存器接口、发送器、接收器和波特率发生器
 // V1.2: TX/RX独立波特率计数器, RX同步起始位, 支持回环和agent驱动
+// V1.3: 新增rx_clear信号连接(regif→rx), 修复溢出检测NBA竞争
 
 module uart_top (
   input  wire       clk_i,
@@ -25,6 +26,7 @@ module uart_top (
   wire        tx_busy, tx_done;
   wire        tx_baud_tick, rx_baud_tick;
   wire        rx_start_det;
+  wire        rx_clear;             // V1.3: regif→rx清除信号
 
   // ========================================================================
   // TX波特率计数器 (自由运行)
@@ -74,7 +76,8 @@ module uart_top (
     .tx_data_o(tx_data), .tx_start_o(tx_start),
     .rx_data_i(rx_data), .rx_valid_i(rx_valid),
     .rx_overflow_i(rx_overflow), .frame_err_i(frame_err),
-    .tx_busy_i(tx_busy), .tx_done_i(tx_done)
+    .tx_busy_i(tx_busy), .tx_done_i(tx_done),
+    .rx_clear_o(rx_clear)
   );
 
   uart_tx u_tx (
@@ -87,7 +90,8 @@ module uart_top (
   uart_rx u_rx (
     .clk_i, .rst_ni,
     .rx_en_i(rx_en), .baud_tick_i(rx_baud_tick),
-    .uart_rx_i(uart_rx_i), .rx_data_o(rx_data),
+    .uart_rx_i(uart_rx_i), .rx_clear_i(rx_clear),
+    .rx_data_o(rx_data),
     .rx_valid_o(rx_valid), .rx_overflow_o(rx_overflow),
     .frame_err_o(frame_err), .start_det_o(rx_start_det)
   );

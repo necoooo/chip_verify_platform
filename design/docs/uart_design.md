@@ -2,7 +2,7 @@
 
 ## 设计文档
 
-**版本：V0.1.0 2026.05.28**
+**版本：V1.3.0 2026.06.08**
 
 ---
 
@@ -11,6 +11,9 @@
 | 版本号 | 修改人 | 修改日期 | 更改理由 | 主要更改内容 |
 |--------|--------|----------|----------|-------------|
 | V0.1.0 | — | 2026-05-28 | 初建 | UART初始版本 |
+| V1.1.0 | — | 2026-06-04 | 验证反馈(BUG UART-01) | 地址解码haddr[3:0]→[5:0]修复RXD(0x10)与CTRL(0x00)冲突 |
+| V1.2.0 | — | 2026-06-04 | 验证反馈(BUG UART-02) | TX/RX独立波特率计数器，修复回环时互相干扰；RX新增start_det_o起始位同步 |
+| V1.3.0 | — | 2026-06-08 | 验证反馈(BUG UART-A) | 新增rx_pending标志+rx_clear信号链，修复rx_overflow_o NBA竞争导致永不检测 |
 
 ---
 
@@ -33,7 +36,7 @@ UART 模块实现标准异步串行通信功能，支持全双工收发。波特
 
 ## 4 基本原理
 
-UART 收发基于波特率时钟（由系统时钟 hclk 分频产生）进行比特采样。发送端将并行数据通过移位寄存器串行输出（LSB first）；接收端对 RX 引脚进行16倍过采样，在每位中点采样，实现可靠的异步接收。
+UART 收发基于波特率时钟（由系统时钟分频产生baud_tick采样脉冲）进行比特采样。发送端将并行数据通过移位寄存器串行输出（LSB first）；接收端检测RX引脚下降沿作为起始位，在每位baud_tick脉冲时刻采样，实现异步接收。TX和RX使用独立的波特率计数器（V1.2起），避免回环模式下互相干扰。
 
 ---
 
@@ -71,20 +74,24 @@ UART 收发基于波特率时钟（由系统时钟 hclk 分频产生）进行比
 
 | 信号名 | 方向 | 位宽 | 说明 |
 |--------|------|------|------|
-| hclk | Input | 1 | AHB 总线时钟 |
-| hresetn | Input | 1 | AHB 总线复位（低有效） |
-| hsel | Input | 1 | AHB Slave 选择 |
-| haddr | Input | 32 | AHB 地址 |
-| hwrite | Input | 1 | AHB 读写控制 |
-| htrans | Input | 2 | AHB 传输类型 |
-| hwdata | Input | 32 | AHB 写数据 |
-| hrdata | Output | 32 | AHB 读数据 |
-| hready | Output | 1 | AHB 传输完成 |
-| hresp | Output | 2 | AHB 传输响应 |
-| uart_tx | Output | 1 | UART 发送引脚 |
-| uart_rx | Input | 1 | UART 接收引脚 |
-| tx_int | Output | 1 | 发送完成中断 |
-| rx_int | Output | 1 | 接收完成中断 |
+| clk_i | Input | 1 | 系统时钟 |
+| rst_ni | Input | 1 | 复位（低有效） |
+| hsel_i | Input | 1 | AHB Slave 选择 |
+| haddr_i | Input | 32 | AHB 地址 |
+| hwrite_i | Input | 1 | AHB 读写控制 |
+| htrans_i | Input | 2 | AHB 传输类型 |
+| hwdata_i | Input | 32 | AHB 写数据 |
+| hrdata_o | Output | 32 | AHB 读数据 |
+| hready_o | Output | 1 | AHB 传输完成 |
+| hresp_o | Output | 2 | AHB 传输响应 |
+| uart_tx_o | Output | 1 | UART 发送引脚 |
+| uart_rx_i | Input | 1 | UART 接收引脚 |
+| tx_int_o | Output | 1 | 发送完成中断 |
+| rx_int_o | Output | 1 | 接收完成中断 |
+
+> **V1.1变更**: 地址解码使用haddr_i[5:0]（原[3:0]导致RXD与CTRL冲突）。
+> **V1.2变更**: TX/RX独立波特率计数器，使用baud_tick单采样而非16倍过采样。
+> **V1.3变更**: 内部新增rx_clear信号(regif→rx)，用于rx_overflow_o正确检测。
 
 ---
 

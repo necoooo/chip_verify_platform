@@ -8,4 +8,17 @@
 ../harness/BT/cmu/sequences/cmu_sanity_seq.sv
 ../harness/BT/cmu/tests/cmu_base_test.sv
 ../harness/BT/cmu/tests/test_cmu_sanity.sv
+// V1.1 2026.06.08: 增加6类详细验证序列和测试
+../harness/BT/cmu/sequences/cmu_clock_source_seq.sv
+../harness/BT/cmu/sequences/cmu_clk_sel_seq.sv
+../harness/BT/cmu/sequences/cmu_glitch_free_seq.sv
+../harness/BT/cmu/sequences/cmu_ahb_seq.sv
+../harness/BT/cmu/sequences/cmu_boundary_seq.sv
+../harness/BT/cmu/sequences/cmu_reset_seq.sv
+../harness/BT/cmu/tests/test_cmu_clock_source.sv
+../harness/BT/cmu/tests/test_cmu_clk_sel.sv
+../harness/BT/cmu/tests/test_cmu_glitch_free.sv
+../harness/BT/cmu/tests/test_cmu_ahb.sv
+../harness/BT/cmu/tests/test_cmu_boundary.sv
+../harness/BT/cmu/tests/test_cmu_reset.sv
 // 新增测试用例在此追加 ↓
