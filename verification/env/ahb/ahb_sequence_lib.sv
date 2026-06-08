@@ -38,6 +38,15 @@ class ahb_base_sequence extends uvm_sequence #(ahb_sequence_item);
     data = item.rdata;
   endtask
 
+  // V1.1: 测量hclk频率(MHz), 不干扰sequencer
+  task measure_hclk_freq(virtual ahb_if vif, input int n_cycles, output real freq_mhz);
+    real t0, t1;
+    t0 = $realtime;
+    repeat(n_cycles) @(posedge vif.hclk);
+    t1 = $realtime;
+    freq_mhz = n_cycles * 1000.0 / (t1 - t0);
+  endtask
+
   // 辅助任务: 等待指定周期数
   task wait_cycles(input int unsigned n);
     repeat (n) begin

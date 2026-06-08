@@ -7,9 +7,8 @@
 // AHB寄存器：0x5000_0000 CMU_CLK_SEL, 0x5000_0004 CMU_STATUS
 // 状态机：三段式结构（状态寄存器 + 下一状态逻辑 + 输出寄存器）
 // V1.2: FSM时钟改用pll_clk_i(始终运行), 修复时钟切换时hclk停振导致FSM卡死
-// V1.3: CDC同步器 — 2-FF同步AHB信号(hclk_o域→pll_clk_i域),
-//       修复切到rch(16MHz)后AHB写CLK_SEL无法被FSM(50MHz)正确采样的亚稳态问题
-//       hwdata采用toggle握手跨域, haddr/hwrite/htrans/hsel各2-FF同步
+// V1.5: 增加clk_sw_pending分离触发与数据,
+//       修复clk_sel_req=0时(切回pll)FSM不触发的问题
 
 module cmu (
   input  wire       rch_clk_i,        // 内部RC振荡器 16MHz
@@ -39,26 +38,24 @@ module cmu (
 
   // 时钟选择与控制
   reg       clk_sel;             // 0=pll, 1=rch
-  reg       clk_sel_req;         // 时钟切换请求
+  reg       clk_sel_req;         // 目标时钟: 0=pll, 1=rch
+  reg       clk_sw_pending;      // V1.5: 切换请求挂起(分离触发与数据)
   reg       gate_pll;            // pll门控
   reg       gate_rch;            // rch门控
   reg [3:0] switch_cnt;          // 切换计数器
 
-  // V1.3: CDC 2-FF同步器 — AHB信号(hclk_o域) → pll_clk_i域
+  // V1.4: CDC 2-FF同步器 — AHB信号(hclk_o域) → pll_clk_i域
   // AHB信号随hclk_o变化(hclk_o可为16MHz或50MHz), FSM在pll_clk_i(50MHz)域
   // 直接采样会导致亚稳态; 2-FF同步器将MTBF降至可忽略水平
+  // 关键: hwdata_i[0]与hwrite_i/haddr_i等控制信号同深度(2级)同步, 保证时序对齐
+  //       控制信号的2级延迟值对应hwdata的2级延迟值, 不会采到过期数据
   reg        hsel_s1, hsel_s2;
   reg        hwrite_s1, hwrite_s2;
   reg [1:0]  htrans_s1, htrans_s2;
   reg [3:0]  haddr_lo_s1, haddr_lo_s2;
-  // V1.3: hwdata通过toggle握手跨域 — 写检测后capture, toggle→同步→边沿检测→安全读取
-  reg        hwdata_cap;           // capture hwdata_i[0] on write detect
-  reg        hwdata_toggle;        // toggle on each write (跨域握手)
-  reg [1:0]  hwdata_toggle_sync;   // 2-FF同步器(pll_clk_i域)
-  reg        hwdata_toggle_sync_d; // 前值, 用于边沿检测
+  reg        hwdata_s0, hwdata_s1;   // hwdata_i[0] 2-FF同步(与控制信号同深度)
 
   wire       ahb_active_sync;
-  wire       hwdata_wr_det;        // pll_clk_i域的写检测脉冲
 
   assign ahb_active_sync = hsel_s2 && (htrans_s2 == 2'b10);
   assign hresp_o = 2'b00;
@@ -68,9 +65,8 @@ module cmu (
   assign rch_gated = rch_clk_i & gate_rch;
   assign hclk_o = clk_sel ? rch_gated : pll_gated;
 
-  // CDC同步器链: 2-FF同步 + hwdata toggle握手
+  // CDC同步器链: 所有AHB输入信号统一2-FF同步(pll_clk_i域)
   always @(posedge pll_clk_i) begin
-    // AHB控制信号 2-FF同步器
     hsel_s1      <= hsel_i;
     hsel_s2      <= hsel_s1;
     hwrite_s1    <= hwrite_i;
@@ -79,22 +75,9 @@ module cmu (
     htrans_s2    <= htrans_s1;
     haddr_lo_s1  <= haddr_i[3:0];
     haddr_lo_s2  <= haddr_lo_s1;
-    // hwdata toggle握手: 同步器+边沿检测
-    hwdata_toggle_sync   <= {hwdata_toggle_sync[0], hwdata_toggle};
-    hwdata_toggle_sync_d <= hwdata_toggle_sync[1];
+    hwdata_s0    <= hwdata_i[0];
+    hwdata_s1    <= hwdata_s0;
   end
-
-  // V1.3: 写检测在pll_clk_i域完成(使用已同步的信号, 避免亚稳态)
-  // hwdata_i[0]在ahb_active_sync为高时已稳定>2周期, 可安全采样
-  always @(posedge pll_clk_i) begin
-    if (ahb_active_sync && hwrite_s2 && haddr_lo_s2 == 4'h0) begin
-      hwdata_cap    <= hwdata_i[0];          // 安全采样(已稳定)
-      hwdata_toggle <= ~hwdata_toggle;        // toggle握手
-    end
-  end
-
-  // pll_clk_i域的写检测脉冲
-  assign hwdata_wr_det = hwdata_toggle_sync[1] ^ hwdata_toggle_sync_d;
 
   // ========================================================================
   // 上电初始化（默认选择pll_clk, 50MHz）
@@ -102,11 +85,12 @@ module cmu (
   initial begin
     curr_state  = S_IDLE;
     clk_sel     = 1'b0;
-    clk_sel_req = 1'b0;
+    clk_sel_req    = 1'b0;
+    clk_sw_pending = 1'b0;
     gate_pll    = 1'b1;
     gate_rch    = 1'b0;
     switch_cnt  = 4'd0;
-    // V1.3: CDC同步器初始值
+    // V1.4: CDC同步器初始值
     hsel_s1     = 1'b0;
     hsel_s2     = 1'b0;
     hwrite_s1   = 1'b0;
@@ -115,10 +99,8 @@ module cmu (
     htrans_s2   = 2'b00;
     haddr_lo_s1 = 4'h0;
     haddr_lo_s2 = 4'h0;
-    hwdata_cap  = 1'b0;
-    hwdata_toggle       = 1'b0;
-    hwdata_toggle_sync  = 2'b00;
-    hwdata_toggle_sync_d = 1'b0;
+    hwdata_s0   = 1'b0;
+    hwdata_s1   = 1'b0;
   end
 
   // ========================================================================
@@ -136,7 +118,8 @@ module cmu (
 
     case (curr_state)
       S_IDLE: begin
-        if (clk_sel_req) begin
+        // V1.5: 用clk_sw_pending触发(与clk_sel_req值无关)
+        if (clk_sw_pending) begin
           next_state = S_GATE_OFF;
         end
       end
@@ -163,15 +146,16 @@ module cmu (
 
   // ========================================================================
   // Block 3: 输出和数据通路逻辑 (pll_clk_i域, 始终运行)
-  // V1.3: AHB写检测改用hwdata_wr_det(CDC toggle握手), 避免直接采样hclk_o域信号
+  // V1.4: AHB写检测使用2-FF同步后的信号, hwdata_s1与控制信号同深度对齐
   // ========================================================================
   always @(posedge pll_clk_i) begin
     case (curr_state)
       S_IDLE: begin
         switch_cnt <= 4'd0;
-        // V1.3: CDC安全的写检测 — hwdata_wr_det是pll_clk_i域的同步脉冲
-        if (hwdata_wr_det) begin
-          clk_sel_req <= hwdata_cap;
+        // V1.5: CDC安全 — 同步信号检测, clk_sw_pending分离触发与数据
+        if (ahb_active_sync && hwrite_s2 && haddr_lo_s2 == 4'h0) begin
+          clk_sel_req    <= hwdata_s1;
+          clk_sw_pending <= 1'b1;
         end
       end
 
@@ -191,7 +175,7 @@ module cmu (
         else             gate_pll <= 1'b1;
         switch_cnt <= switch_cnt + 4'd1;
         if (switch_cnt == 4'd3) begin
-          clk_sel_req <= 1'b0;
+          clk_sw_pending <= 1'b0;    // V1.5: 清除pending触发
         end
       end
 

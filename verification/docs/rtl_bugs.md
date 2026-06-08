@@ -10,7 +10,8 @@
 |----|--------|------|------|------|
 | CMU-01 | HIGH | 无上电复位, X态扩散至clk_sel/hclk_o | V1.1 initial块 | 0604 |
 | CMU-02 | HIGH | FSM用hclk_o做时钟, 切换时钟时hclk停振→死锁 | V1.2 改用pll_clk_i | 0604 |
-| CMU-03 | HIGH | AHB接口(hclk域)与FSM(pll_clk_i域)跨时钟域: 切到rch(16MHz)后AHB写无法被50MHz FSM可靠采样→无法切回pll | V1.3 CDC同步器 | 0608 |
+| CMU-03 | HIGH | AHB(hclk_o域)与FSM(pll_clk_i域)跨时钟域 | V1.4 CDC 2-FF同步 | 0608 |
+| CMU-04 | HIGH | clk_sel_req兼具触发+数据→写0时if(clk_sel_req)为假→FSM不启动 | V1.5 分离触发与数据 | 0608 |
 
 ## RMU
 | ID | 严重度 | 描述 | 修复 | 日期 |
@@ -43,4 +44,4 @@
 
 ---
 
-**统计**: HIGH 8(已修复7) | MEDIUM 4(已修复3) | 待修复 1(UART-04验证环境) |
+**统计**: HIGH 8(已修复8) | MEDIUM 4(已修复3) | 待修复 1(UART-04验证环境) |
