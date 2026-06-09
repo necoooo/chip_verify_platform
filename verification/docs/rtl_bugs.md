@@ -12,6 +12,7 @@
 | CMU-02 | HIGH | FSM用hclk_o做时钟, 切换时钟时hclk停振→死锁 | V1.2 改用pll_clk_i | 0604 |
 | CMU-03 | HIGH | AHB(hclk_o域)与FSM(pll_clk_i域)跨时钟域 | V1.4 CDC 2-FF同步 | 0608 |
 | CMU-04 | HIGH | clk_sel_req兼具触发+数据→写0时if(clk_sel_req)为假→FSM不启动 | V1.5 分离触发与数据 | 0608 |
+| CMU-05 | MEDIUM | gate打开时与时钟相位未对齐→窄脉冲(2.5ns runt pulse) | V1.6 negedge对齐+CDC同步 | 0609 |
 
 ## RMU
 | ID | 严重度 | 描述 | 修复 | 日期 |

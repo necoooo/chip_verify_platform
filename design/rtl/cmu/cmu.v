@@ -7,8 +7,8 @@
 // AHB寄存器：0x5000_0000 CMU_CLK_SEL, 0x5000_0004 CMU_STATUS
 // 状态机：三段式结构（状态寄存器 + 下一状态逻辑 + 输出寄存器）
 // V1.2: FSM时钟改用pll_clk_i(始终运行), 修复时钟切换时hclk停振导致FSM卡死
-// V1.5: 增加clk_sw_pending分离触发与数据,
-//       修复clk_sel_req=0时(切回pll)FSM不触发的问题
+// V1.6: 门控negedge对齐 — 门控在时钟低电平时打开, 消除窄脉冲/毛刺,
+//       pll同域negedge寄存器, rch经2-FF CDC同步至rch_clk_i域+negedge对齐
 
 module cmu (
   input  wire       rch_clk_i,        // 内部RC振荡器 16MHz
@@ -61,8 +61,24 @@ module cmu (
   assign hresp_o = 2'b00;
   assign hready_o = 1'b1;
 
-  assign pll_gated = pll_clk_i & gate_pll;
-  assign rch_gated = rch_clk_i & gate_rch;
+  // V1.6: negedge对齐门控 — gate在时钟低电平时变化, 下一上升沿为完整半周期
+  // pll: 同域, 单级negedge寄存器即消除窄脉冲
+  // rch: 跨域(gate_rch来自pll_clk_i域), 2-FF同步至rch_clk_i域+negedge对齐
+  reg gate_pll_n;                   // pll门控 negedge对齐
+  reg gate_rch_s1, gate_rch_s2;    // rch门控 CDC 2-FF + negedge对齐
+
+  always @(negedge pll_clk_i) begin
+    gate_pll_n <= gate_pll;
+  end
+
+  always @(negedge rch_clk_i) begin
+    gate_rch_s1 <= gate_rch;
+    gate_rch_s2 <= gate_rch_s1;
+  end
+
+  wire pll_gated, rch_gated;
+  assign pll_gated = pll_clk_i & gate_pll_n;
+  assign rch_gated = rch_clk_i & gate_rch_s2;
   assign hclk_o = clk_sel ? rch_gated : pll_gated;
 
   // CDC同步器链: 所有AHB输入信号统一2-FF同步(pll_clk_i域)
@@ -89,6 +105,9 @@ module cmu (
     clk_sw_pending = 1'b0;
     gate_pll    = 1'b1;
     gate_rch    = 1'b0;
+    gate_pll_n  = 1'b1;             // V1.6: 上电默认pll门控开
+    gate_rch_s1 = 1'b0;
+    gate_rch_s2 = 1'b0;
     switch_cnt  = 4'd0;
     // V1.4: CDC同步器初始值
     hsel_s1     = 1'b0;

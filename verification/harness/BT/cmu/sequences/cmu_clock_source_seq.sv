@@ -1,19 +1,23 @@
-// CMU Clock Source V1.3: 内联@(posedge cfg.ahb_vif.hclk)测量频率
+// CMU Clock Source V2.0: +频率测量 + 毛刺检测
 class cmu_clock_source_seq extends ahb_base_sequence;
   `uvm_object_utils(cmu_clock_source_seq)
   rand int num_iterations;
-  constraint c_iter { num_iterations inside {[5:20]}; }
+  constraint c_iter { num_iterations inside {[200:500]}; }
   function new(string name = "cmu_clock_source_seq"); super.new(name); endfunction
 
   task body();
     bit [31:0] rd;
     bit target;
     real freq, t0, t1;
+    int  glitch_cnt, edge_total;
     cmu_env_config cfg;
     if (!uvm_config_db #(cmu_env_config)::get(null, "uvm_test_top.env", "cfg", cfg)) begin
       `uvm_error(get_type_name(), "CMU config not found"); return;
     end
-    `uvm_info(get_type_name(), $sformatf("=== Clock Source V1.3: %0d iters ===", num_iterations), UVM_LOW)
+    `uvm_info(get_type_name(), $sformatf("=== Clock Source V2.0: %0d iters ===", num_iterations), UVM_LOW)
+
+    fork check_hclk_glitch(cfg.ahb_vif, 5, glitch_cnt, edge_total); join_none
+
     wait_cycles(50);
 
     ahb_read(cfg.base_addr + 12'h000, rd);
@@ -42,6 +46,10 @@ class cmu_clock_source_seq extends ahb_base_sequence;
       ahb_read(cfg.base_addr + 12'h000, rd);
       if (rd[0] !== 1'b0) `uvm_error(get_type_name(), $sformatf("i%0d: exp=0 got=%b", i, rd[0]))
     end
+    disable fork;
+    `uvm_info(get_type_name(), $sformatf("Glitch count: %0d, Total edges: %0d", glitch_cnt, edge_total), UVM_LOW)
+    if (glitch_cnt > 0)
+      `uvm_error(get_type_name(), $sformatf("%0d hclk glitches detected (<5ns)", glitch_cnt))
     `uvm_info(get_type_name(), "Clock Source PASS", UVM_LOW)
   endtask
 endclass

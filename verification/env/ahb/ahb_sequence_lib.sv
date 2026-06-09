@@ -16,6 +16,32 @@ class ahb_base_sequence extends uvm_sequence #(ahb_sequence_item);
     super.new(name);
   endfunction
 
+  // V1.1: 测量hclk频率(MHz)
+  task measure_hclk_freq(virtual ahb_if vif, input int n_cycles, output real freq_mhz);
+    real t0, t1;
+    t0 = $realtime; repeat(n_cycles) @(posedge vif.hclk); t1 = $realtime;
+    freq_mhz = n_cycles * 1000.0 / (t1 - t0);
+  endtask
+
+  // V1.5: 毛刺检测 + 边沿计数调试
+  task check_hclk_glitch(virtual ahb_if vif, input int min_half_ns, ref int glitch_cnt, ref int edge_total);
+    real t_last, t_now, delta;
+    glitch_cnt = 0;
+    edge_total = 0;
+    t_last = $realtime;
+    forever begin
+      @(posedge vif.hclk or negedge vif.hclk);
+      t_now = $realtime;
+      edge_total++;
+      delta = t_now - t_last;
+      if (t_last > 0 && delta > 0.001 && delta <= min_half_ns) begin
+        `uvm_info("GLITCH", $sformatf("hclk glitch: %.3fns", delta), UVM_LOW)
+        glitch_cnt++;
+      end
+      t_last = t_now;
+    end
+  endtask
+
   // 辅助任务: AHB写
   task ahb_write(input bit [31:0] addr, input bit [31:0] data);
     ahb_sequence_item item;
@@ -36,15 +62,6 @@ class ahb_base_sequence extends uvm_sequence #(ahb_sequence_item);
     item.write = 1'b0;
     finish_item(item);
     data = item.rdata;
-  endtask
-
-  // V1.1: 测量hclk频率(MHz), 不干扰sequencer
-  task measure_hclk_freq(virtual ahb_if vif, input int n_cycles, output real freq_mhz);
-    real t0, t1;
-    t0 = $realtime;
-    repeat(n_cycles) @(posedge vif.hclk);
-    t1 = $realtime;
-    freq_mhz = n_cycles * 1000.0 / (t1 - t0);
   endtask
 
   // 辅助任务: 等待指定周期数

@@ -1,6 +1,4 @@
-//--------------------------------------------------------------
 // CMU Clock Source Test V1.0
-//--------------------------------------------------------------
 class test_cmu_clock_source extends cmu_base_test;
   `uvm_component_utils(test_cmu_clock_source)
   function new(string n = "test_cmu_clock_source", uvm_component p = null); super.new(n, p); endfunction
